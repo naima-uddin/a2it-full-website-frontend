@@ -3,59 +3,45 @@
 import { useEffect, useState } from "react";
 
 /**
- * Master choreography for the login scene.
- * All times are milliseconds from mount. Keep in sync with the durations
- * called out in the character asset spec (see public/animations/login-character/ASSET_SPEC.md).
+ * Choreography for the login intro, matching the reference: the character
+ * walks in from the left, the card pops in as it arrives, then the fields
+ * cascade in.
+ *
+ * `walkEnd` is tuned to the artwork's own cycle (~1.33s at 30fps) so the
+ * character stops on a full stride rather than mid-step.
+ *
+ * All values are milliseconds from mount.
  */
 export const TIMELINE = {
-  walkStart: 0,
-  walkEnd: 1200, // character walk-cycle plays, container slides in
-  approachEnd: 2200, // character slows, settles into idle near the form's future position
-  burstAt: 2200, // login card bursts into view
-  badgeAt: 2350, // "Task Assigned" badge appears just after the burst
-  pointStart: 3000,
-  pointEnd: 4000,
-  leanStart: 4000,
-  leanEnd: 4800, // character is fully settled into the lean-idle loop from here on
-};
-
-// Character "pose" drives which Lottie state (or SVG rig variant) is shown.
-// walking -> idle -> point -> lean -> leanIdle
-export const STAGE_POSE = {
-  walk: "walking",
-  approach: "idle",
-  burst: "idle",
-  point: "point",
-  lean: "lean",
-  settled: "leanIdle",
+  walkEnd: 1330, // character has finished walking in
+  cardAt: 1450, // card pops into view
+  fieldsAt: 1750, // fields start cascading
 };
 
 /**
- * Drives the scene through its stages on a timer.
- * Respects prefers-reduced-motion by skipping straight to the final, settled state.
+ * Stages: "walk" -> "arrive" -> "settled"
+ *
+ * `ready` gates the start so the walk-in doesn't play out before the
+ * character artwork has finished loading — otherwise on a slow connection
+ * the character pops in already standing.
  */
-export function useLoginTimeline(reducedMotion) {
+export function useLoginTimeline(reducedMotion, ready = true) {
   const [stage, setStage] = useState(reducedMotion ? "settled" : "walk");
-  const [formVisible, setFormVisible] = useState(reducedMotion);
-  const [badgeVisible, setBadgeVisible] = useState(reducedMotion);
+  const [cardVisible, setCardVisible] = useState(!!reducedMotion);
+  const [fieldsVisible, setFieldsVisible] = useState(!!reducedMotion);
 
   useEffect(() => {
-    // Initial state already accounts for reducedMotion (see useState above);
-    // only the full-motion path needs a timer sequence.
-    if (reducedMotion) return;
+    if (reducedMotion || !ready) return;
 
     const timers = [
-      setTimeout(() => setStage("approach"), TIMELINE.walkEnd),
-      setTimeout(() => setStage("burst"), TIMELINE.approachEnd),
-      setTimeout(() => setFormVisible(true), TIMELINE.burstAt),
-      setTimeout(() => setBadgeVisible(true), TIMELINE.badgeAt),
-      setTimeout(() => setStage("point"), TIMELINE.pointStart),
-      setTimeout(() => setStage("lean"), TIMELINE.leanStart),
-      setTimeout(() => setStage("settled"), TIMELINE.leanEnd),
+      setTimeout(() => setStage("arrive"), TIMELINE.walkEnd),
+      setTimeout(() => setCardVisible(true), TIMELINE.cardAt),
+      setTimeout(() => setFieldsVisible(true), TIMELINE.fieldsAt),
+      setTimeout(() => setStage("settled"), TIMELINE.fieldsAt + 300),
     ];
 
     return () => timers.forEach(clearTimeout);
-  }, [reducedMotion]);
+  }, [reducedMotion, ready]);
 
-  return { stage, pose: STAGE_POSE[stage], formVisible, badgeVisible };
+  return { stage, cardVisible, fieldsVisible };
 }

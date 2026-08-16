@@ -1,28 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
+import { Mail, Lock, Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
 import api from "@/app/hrm/lib/api";
 import { toast } from "react-hot-toast";
 
-const burstVariants = {
-  hidden: { opacity: 0, scale: 0.75, filter: "blur(6px)" },
-  visible: {
+/** Cascade used for the label/field/button rows, matching the reference. */
+const rise = {
+  hidden: { opacity: 0, y: 16 },
+  show: (i) => ({
     opacity: 1,
-    scale: [0.75, 1.08, 0.97, 1],
-    filter: "blur(0px)",
-    transition: { duration: 0.7, times: [0, 0.55, 0.8, 1], ease: [0.22, 0.8, 0.2, 1] },
-  },
-};
-
-const reducedVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.4 } },
+    y: 0,
+    transition: { delay: i * 0.09, duration: 0.42, ease: [0.22, 0.9, 0.24, 1] },
+  }),
 };
 
 export default function LoginForm({
-  visible,
+  fieldsVisible = true,
   reducedMotion,
   email,
   setEmail,
@@ -36,19 +32,17 @@ export default function LoginForm({
   setIsFocused,
   handleSubmit,
 }) {
-  const shakeControls = useAnimation();
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotName, setForgotName] = useState("");
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
-  const prevGeneralError = useRef("");
 
-  useEffect(() => {
-    if (errors.general && errors.general !== prevGeneralError.current) {
-      shakeControls.start({ x: [0, -8, 8, -6, 6, -3, 0], transition: { duration: 0.5 } });
-    }
-    prevGeneralError.current = errors.general;
-  }, [errors.general, shakeControls]);
+  const anim = (i) => ({
+    variants: rise,
+    custom: i,
+    initial: reducedMotion ? false : "hidden",
+    animate: fieldsVisible ? "show" : "hidden",
+  });
 
   const handleForgotPassword = async (e) => {
     e.preventDefault();
@@ -76,111 +70,89 @@ export default function LoginForm({
 
   return (
     <>
-      <motion.div
-        className="card"
-        variants={reducedMotion ? reducedVariants : burstVariants}
-        initial="hidden"
-        animate={visible ? "visible" : "hidden"}
-      >
-        <motion.div animate={shakeControls}>
-          <div className="brand-row">
-            <Image src="/A2ITLogo.png" alt="A2IT" width={36} height={36} className="logo" />
-            <div>
-              <h1 className="title">Welcome Back</h1>
-              <p className="subtitle">Sign in to A2it HRM Portal</p>
+      <div className="head">
+        <Image src="/A2ITLogo.png" alt="A2IT" width={34} height={34} className="mark" />
+        <h1 className="title">Welcome Back</h1>
+        <p className="sub">Sign in to your A2it HRM Portal account</p>
+      </div>
+
+      <div className="pane">
+        {errors.general && <div className="gen-err">{errors.general}</div>}
+
+        <form onSubmit={handleSubmit} noValidate>
+          <motion.label className="cap" {...anim(0)}>
+            Enter your email address <span className="req">*</span>
+          </motion.label>
+          <motion.div className="row" {...anim(1)}>
+            <div className={`ctrl ${errors.email ? "bad" : ""} ${isFocused.email ? "on" : ""}`}>
+              <Mail className="ico" size={17} strokeWidth={1.9} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onFocus={() => setIsFocused((p) => ({ ...p, email: true }))}
+                onBlur={() => setIsFocused((p) => ({ ...p, email: false }))}
+                placeholder="Ex. yourname@company.com"
+                autoComplete="email"
+              />
             </div>
-          </div>
+            {errors.email && <span className="msg">{errors.email}</span>}
+          </motion.div>
 
-          {errors.general && <div className="gen-err">{errors.general}</div>}
-
-          <form onSubmit={handleSubmit} noValidate>
-            <div className="row">
-              <div className="field-wrap">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setIsFocused((p) => ({ ...p, email: true }))}
-                  onBlur={() => setIsFocused((p) => ({ ...p, email: false }))}
-                  className={`field ${errors.email ? "err" : ""}`}
-                  placeholder="Email Address"
-                  autoComplete="email"
-                />
-                <label className={`fl ${isFocused.email || email ? "up" : ""}`}>Email Address</label>
-              </div>
-              {errors.email && <div className="msg">{errors.email}</div>}
-            </div>
-
-            <div className="row">
-              <div className="field-wrap">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setIsFocused((p) => ({ ...p, password: true }))}
-                  onBlur={() => setIsFocused((p) => ({ ...p, password: false }))}
-                  className={`field pr ${errors.password ? "err" : ""}`}
-                  placeholder="Password"
-                  autoComplete="current-password"
-                />
-                <label className={`fl ${isFocused.password || password ? "up" : ""}`}>Password</label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="eye-btn"
-                  aria-label="Toggle password visibility"
-                >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-              {errors.password && <div className="msg">{errors.password}</div>}
-            </div>
-
-            <div className="forgot-row">
-              <button type="button" onClick={() => setShowForgotModal(true)} className="forgot">
-                Forgot Password?
+          <motion.label className="cap" {...anim(2)}>
+            Enter your password <span className="req">*</span>
+          </motion.label>
+          <motion.div className="row" {...anim(3)}>
+            <div className={`ctrl ${errors.password ? "bad" : ""} ${isFocused.password ? "on" : ""}`}>
+              <Lock className="ico" size={17} strokeWidth={1.9} />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setIsFocused((p) => ({ ...p, password: true }))}
+                onBlur={() => setIsFocused((p) => ({ ...p, password: false }))}
+                placeholder="Your password"
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="peek"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <EyeOff size={17} strokeWidth={1.9} /> : <Eye size={17} strokeWidth={1.9} />}
               </button>
             </div>
+            {errors.password && <span className="msg">{errors.password}</span>}
+          </motion.div>
 
-            <button type="submit" disabled={loading} className="submit">
-              {loading ? (
-                <>
-                  <span className="spin" /> Authenticating...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                  Login to Your Account
-                </>
-              )}
+          <motion.button type="submit" disabled={loading} className="go" {...anim(4)}>
+            {loading ? (
+              <>
+                <Loader2 className="spin" size={17} /> Authenticating...
+              </>
+            ) : (
+              <>
+                <LogIn size={17} strokeWidth={2.2} /> Login
+              </>
+            )}
+          </motion.button>
+
+          <motion.div className="foot" {...anim(5)}>
+            <button type="button" onClick={() => setShowForgotModal(true)} className="forgot">
+              Forgot Password?
             </button>
-          </form>
-
-          <div className="secure">
-            <span>
-              <i className="pulse" /> Secure Connection
+            <span className="secure">
+              <i className="dot" /> Secure Connection
             </span>
-            <span className="dotsep">•</span>
-            <span>Privacy Protected</span>
-          </div>
-        </motion.div>
-      </motion.div>
+          </motion.div>
+        </form>
+      </div>
 
       {showForgotModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-            <div className="bg-[#113F67] p-5 text-white">
+            <div className="bg-[#5a5ff2] p-5 text-white">
               <h2 className="text-lg font-bold">Forgot Password?</h2>
               <p className="text-sm opacity-80 mt-0.5">We&apos;ll notify the admin to reset your password</p>
             </div>
@@ -192,7 +164,7 @@ export default function LoginForm({
                   value={forgotName}
                   onChange={(e) => setForgotName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#113F67] focus:outline-none text-sm transition-colors"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#5a5ff2] focus:outline-none text-sm transition-colors"
                 />
               </div>
               <div>
@@ -202,10 +174,10 @@ export default function LoginForm({
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#113F67] focus:outline-none text-sm transition-colors"
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-lg focus:border-[#5a5ff2] focus:outline-none text-sm transition-colors"
                 />
               </div>
-              <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-xs text-blue-700">
+              <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-3 text-xs text-indigo-700">
                 After submitting, the admin will be notified and will reset your password and send it to you.
               </div>
               <div className="flex gap-3 pt-1">
@@ -223,7 +195,7 @@ export default function LoginForm({
                 <button
                   type="submit"
                   disabled={forgotLoading}
-                  className="flex-1 py-2.5 bg-[#113F67] text-white rounded-lg font-semibold hover:opacity-90 transition-all disabled:opacity-60 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-[#5a5ff2] text-white rounded-lg font-semibold hover:opacity-90 transition-all disabled:opacity-60 text-sm flex items-center justify-center gap-2"
                 >
                   {forgotLoading ? (
                     <>
@@ -241,182 +213,174 @@ export default function LoginForm({
       )}
 
       <style jsx>{`
-        :global(.card) {
-          position: relative;
-          width: 380px;
-          max-width: 88vw;
-          background: #ffffff;
-          border-radius: 22px;
-          padding: 32px 28px 26px;
-          box-shadow: 0 30px 60px -20px rgba(17, 63, 103, 0.28), 0 0 0 1px rgba(17, 63, 103, 0.06);
+        /* styled-jsx only scopes plain DOM elements. Anything below whose
+           className lands on a component (next/image, motion.*, lucide) has
+           to be :global, namespaced under .card so it can't leak. */
+        .head {
+          text-align: center;
+          margin-bottom: 20px;
         }
-        .brand-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 22px;
-        }
-        .logo {
+        :global(.card .mark) {
           border-radius: 8px;
-          flex-shrink: 0;
+          margin: 0 auto 10px;
+          display: block;
+          background: #fff;
+          padding: 3px;
         }
         .title {
-          font-size: 22px;
+          color: #fff;
+          font-size: 25px;
           font-weight: 800;
-          color: #0f2942;
-          line-height: 1.2;
+          letter-spacing: -0.4px;
+          line-height: 1.15;
         }
-        .subtitle {
+        .sub {
+          color: rgba(255, 255, 255, 0.82);
           font-size: 13px;
-          color: #6b7a89;
-          margin-top: 2px;
+          margin-top: 5px;
         }
+
+        /* Keeps the copy clear of the character standing at the card's left edge. */
+        .pane {
+          padding-left: 112px;
+        }
+
         .gen-err {
-          margin-bottom: 14px;
-          padding: 10px 12px;
-          font-size: 13px;
+          margin-bottom: 13px;
+          padding: 9px 12px;
+          font-size: 12.5px;
           font-weight: 600;
-          background: #fef2f2;
-          color: #b91c1c;
-          border: 1px solid #fecaca;
-          border-radius: 12px;
+          color: #fff;
+          background: rgba(220, 38, 38, 0.9);
+          border-radius: 9px;
+          text-align: center;
         }
-        .row {
-          margin-bottom: 16px;
+        :global(.card .cap) {
+          display: block;
+          text-align: center;
+          color: rgba(255, 255, 255, 0.94);
+          font-size: 12.5px;
+          font-weight: 600;
+          margin-bottom: 7px;
         }
-        .field-wrap {
-          position: relative;
+        .req {
+          color: #ffd9a0;
         }
-        .field {
-          width: 100%;
-          padding: 14px 16px;
-          border: 1.5px solid #e2e8f0;
-          border-radius: 12px;
+        :global(.card .row) {
+          margin-bottom: 14px;
+        }
+        .ctrl {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          background: #fff;
+          border-radius: 9px;
+          padding: 0 12px;
+          height: 46px;
+          box-shadow: 0 2px 0 rgba(19, 21, 70, 0.12);
+          transition: box-shadow 0.18s ease;
+        }
+        .ctrl.on {
+          box-shadow:
+            0 2px 0 rgba(19, 21, 70, 0.12),
+            0 0 0 3px rgba(255, 255, 255, 0.42);
+        }
+        .ctrl.bad {
+          box-shadow:
+            0 2px 0 rgba(19, 21, 70, 0.12),
+            0 0 0 3px rgba(248, 113, 113, 0.75);
+        }
+        .ctrl :global(.ico) {
+          color: #9aa3b2;
+          flex-shrink: 0;
+        }
+        .ctrl input {
+          flex: 1;
+          border: none;
           outline: none;
-          font-size: 15px;
-          color: #0f2942;
-          background: #fff;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          background: transparent;
+          font-size: 14px;
+          color: #1f2440;
+          min-width: 0;
         }
-        .field::placeholder {
-          color: transparent;
+        .ctrl input::placeholder {
+          color: #a7aec0;
         }
-        .field:focus {
-          border-color: #113f67;
-          box-shadow: 0 0 0 4px rgba(17, 63, 103, 0.12);
+        .peek {
+          color: #9aa3b2;
+          display: flex;
+          padding: 3px;
+          flex-shrink: 0;
         }
-        .field.err {
-          border-color: #ef4444;
-          box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-        }
-        .field.pr {
-          padding-right: 46px;
-        }
-        .fl {
-          position: absolute;
-          left: 15px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #94a3b8;
-          font-size: 15px;
-          pointer-events: none;
-          transition: all 0.2s ease;
-          transform-origin: left;
-        }
-        .fl.up {
-          top: 0;
-          transform: translateY(-50%) scale(0.75);
-          color: #113f67;
-          font-weight: 700;
-          background: #fff;
-          padding: 0 6px;
+        .peek:hover {
+          color: #5a5ff2;
         }
         .msg {
-          color: #dc2626;
-          font-size: 12px;
-          padding: 3px 4px;
-          display: inline-block;
-          margin-top: 2px;
-        }
-        .eye-btn {
-          position: absolute;
-          right: 13px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #94a3b8;
-          padding: 4px;
-        }
-        .eye-btn:hover {
-          color: #113f67;
-        }
-        .forgot-row {
-          text-align: right;
-          margin: -6px 0 16px;
-        }
-        .forgot {
-          font-size: 12.5px;
-          color: #113f67;
+          display: block;
+          margin-top: 5px;
+          font-size: 11.5px;
           font-weight: 600;
+          color: #ffd2d2;
+          text-align: center;
         }
-        .forgot:hover {
-          text-decoration: underline;
-        }
-        .submit {
+        :global(.card .go) {
           width: 100%;
-          padding: 14px;
+          height: 46px;
+          margin-top: 6px;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
-          border-radius: 12px;
+          border-radius: 9px;
           color: #fff;
           font-weight: 700;
           font-size: 15px;
-          background: linear-gradient(90deg, #113f67, #1b5a8c);
-          box-shadow: 0 14px 28px -10px rgba(17, 63, 103, 0.55);
-          transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+          background: linear-gradient(180deg, #34cf72 0%, #22bd60 100%);
+          box-shadow: 0 6px 16px -6px rgba(11, 92, 48, 0.8);
+          transition: filter 0.18s ease, transform 0.18s ease;
         }
-        .submit:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 20px 34px -12px rgba(17, 63, 103, 0.6);
+        :global(.card .go:hover:not(:disabled)) {
+          filter: brightness(1.06);
         }
-        .submit:disabled {
+        :global(.card .go:disabled) {
           opacity: 0.75;
           cursor: not-allowed;
         }
-        .spin {
-          width: 16px;
-          height: 16px;
-          border: 2px solid #fff;
-          border-top-color: transparent;
-          border-radius: 50%;
-          animation: sp 0.8s linear infinite;
-          display: inline-block;
+        :global(.card .go .spin) {
+          animation: sp 0.9s linear infinite;
         }
         @keyframes sp {
           to {
             transform: rotate(360deg);
           }
         }
-        .secure {
-          margin-top: 20px;
+        :global(.card .foot) {
+          margin-top: 14px;
           display: flex;
           align-items: center;
-          justify-content: center;
+          justify-content: space-between;
           gap: 10px;
-          color: #94a3b8;
-          font-size: 12px;
         }
-        .secure span {
+        .forgot {
+          font-size: 12px;
+          font-weight: 600;
+          color: rgba(255, 255, 255, 0.9);
+        }
+        .forgot:hover {
+          text-decoration: underline;
+        }
+        .secure {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
+          gap: 6px;
+          font-size: 11.5px;
+          color: rgba(255, 255, 255, 0.72);
         }
-        .pulse {
-          width: 7px;
-          height: 7px;
+        .dot {
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          background: #2f9e6e;
+          background: #4ade80;
           animation: pl 1.6s infinite;
         }
         @keyframes pl {
@@ -425,11 +389,26 @@ export default function LoginForm({
             opacity: 1;
           }
           50% {
-            opacity: 0.3;
+            opacity: 0.25;
           }
         }
-        .dotsep {
-          opacity: 0.5;
+
+        @media (max-width: 860px) {
+          .pane {
+            padding-left: 84px;
+          }
+          .title {
+            font-size: 22px;
+          }
+        }
+        @media (max-width: 620px) {
+          .pane {
+            padding-left: 0;
+          }
+          :global(.card .foot) {
+            flex-direction: column;
+            gap: 6px;
+          }
         }
       `}</style>
     </>
