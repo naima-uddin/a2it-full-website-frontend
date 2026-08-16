@@ -1,0 +1,167 @@
+[
+  {
+    "id": "webdev1",
+    "title": "Why Product Strategy is the Hidden Hero of Successful App Launches",
+    "excerpt": "Learn how a well-crafted product strategy drives mobile and web app success, beyond just design and code.",
+    "category": "Web & Mobile App Designing & Development",
+    "date": "2025-07-21",
+    "readTime": "7 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/1.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "webdev2",
+    "title": "Top Mobile App Development Blogs to Follow in 2025",
+    "excerpt": "A curated list of top development blogs including Android Developers Blog, iOS Dev Weekly, and Ray Wenderlich.",
+    "category": "Web & Mobile App Designing & Development",
+    "date": "2025-05-01",
+    "readTime": "6 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/2.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "webdev3",
+    "title": "UI/UX Design Trends for Web Apps in 2025",
+    "excerpt": "Explore minimalistic layouts, vibrant gradients, and smart animations shaping the future of UI/UX.",
+    "category": "Web & Mobile App Designing & Development",
+    "date": "2025-06-10",
+    "readTime": "5 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/3.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "webdev4",
+    "title": "Benefits of Progressive Web Apps (PWAs)",
+    "excerpt": "Why PWAs are gaining popularity in mobile-first development strategies.",
+    "category": "Web & Mobile App Designing & Development",
+    "date": "2025-08-01",
+    "readTime": "6 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/4.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "ecom1",
+    "title": "10 Must-Follow eCommerce Blogs in 2025",
+    "excerpt": "Stay ahead in the eCommerce game with blogs from Shopify, BigCommerce, Neil Patel, and more.",
+    "category": "eCommerce Development Solutions",
+    "date": "2025-05-14",
+    "readTime": "5 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/5.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "ecom3",
+    "title": "How Headless Commerce Is Changing Online Stores",
+    "excerpt": "Learn how decoupled eCommerce architectures provide greater flexibility and scalability.",
+    "category": "eCommerce Development Solutions",
+    "date": "2025-04-12",
+    "readTime": "8 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/6.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "ecom4",
+    "title": "Best Payment Gateways for eCommerce in 2025",
+    "excerpt": "Compare Stripe, PayPal, Razorpay, and others for international transactions and APIs.",
+    "category": "eCommerce Development Solutions",
+    "date": "2025-07-01",
+    "readTime": "6 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/8.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "erp1",
+    "title": "ERP System Development: A Guide to Best Practices",
+    "excerpt": "Key considerations for selecting and implementing a modern ERP system that supports scale.",
+    "category": "ERP System Development",
+    "date": "2025-02-01",
+    "readTime": "8 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/9.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "erp2",
+    "title": "Why Businesses Fail at ERP Implementation",
+    "excerpt": "Understand common mistakes and how to avoid them while rolling out ERP systems.",
+    "category": "ERP System Development",
+    "date": "2025-06-04",
+    "readTime": "6 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/10.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "seo1",
+    "title": "SEO Strategies That Still Work in 2025",
+    "excerpt": "Understand how Google's evolving algorithms are impacting SEO and digital marketing in 2025.",
+    "category": "SEO / SEM / PPC / Social Media Marketing",
+    "date": "2025-06-12",
+    "readTime": "9 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/16.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "seo3",
+    "title": "Top 10 Google Ads Mistakes Marketers Still Make",
+    "excerpt": "Learn how to avoid the most common budget-wasting mistakes in Google Ads campaigns.",
+    "category": "SEO / SEM / PPC / Social Media Marketing",
+    "date": "2025-07-14",
+    "readTime": "7 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/15.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "seo4",
+    "title": "Best Times to Post on Social Media in 2025",
+    "excerpt": "Maximize engagement by posting at the right time on each platform.",
+    "category": "SEO / SEM / PPC / Social Media Marketing",
+    "date": "2025-05-22",
+    "readTime": "5 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/14.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "hosting2",
+    "title": "How to Choose the Right VPS Hosting",
+    "excerpt": "Compare VPS vs shared and dedicated hosting for different business needs.",
+    "category": "Server and Hosting Services",
+    "date": "2025-06-18",
+    "readTime": "6 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/13.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "hosting3",
+    "title": "Top Cloud Hosting Platforms Compared: AWS vs GCP vs Azure",
+    "excerpt": "A detailed breakdown of major cloud hosting providers, pricing, and performance.",
+    "category": "Server and Hosting Services",
+    "date": "2025-05-11",
+    "readTime": "8 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/12.avif",
+    "externalUrl": "/blog"
+  },
+  {
+    "id": "hosting4",
+    "title": "Web Hosting Security: What You Need to Know",
+    "excerpt": "How to choose secure hosting, understand firewalls, backups, SSL, and DDoS protection.",
+    "category": "Server and Hosting Services",
+    "date": "2025-04-26",
+    "readTime": "6 min read",
+    "featured": false,
+    "image": "/assets/BlogImg/11.avif",
+    "externalUrl": "/blog"
+  }
+]

@@ -1,0 +1,43 @@
+{
+  "name": "a2it-full-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@lottiefiles/dotlottie-react": "^0.19.13",
+    "@react-pdf/renderer": "^4.3.2",
+    "axios": "^1.13.2",
+    "exceljs": "^4.4.0",
+    "framer-motion": "^12.23.26",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4",
+    "leaflet": "^1.9.4",
+    "leaflet-geosearch": "^4.2.1",
+    "lottie-react": "^2.4.1",
+    "lucide-react": "^0.562.0",
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-countup": "^6.5.3",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "19.2.3",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
+    "react-intersection-observer": "^9.16.0",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4"
+  }
+}
