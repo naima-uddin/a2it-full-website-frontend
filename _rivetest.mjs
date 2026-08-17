@@ -1,0 +1,22 @@
+import puppeteer from "puppeteer-core";
+const CHROME = "C:/Program Files/Google/Chrome/Application/chrome.exe";
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new", args: ["--no-sandbox"] });
+const page = await browser.newPage();
+await page.setViewport({ width: 1200, height: 800 });
+const logs = [];
+page.on("console", (m) => logs.push(`[${m.type()}] ${m.text()}`));
+page.on("pageerror", (e) => logs.push(`[pageerror] ${e.message}`));
+page.on("requestfailed", (r) => logs.push(`[reqfail] ${r.url()} :: ${r.failure()?.errorText}`));
+const net = [];
+page.on("response", (r) => { const u=r.url(); if (u.includes(".wasm")||u.includes(".riv")) net.push(`${r.status()} ${u}`); });
+await page.goto("http://localhost:3000/hrm/administration-login", { waitUntil: "networkidle0", timeout: 60000 });
+await new Promise((r) => setTimeout(r, 3500));
+const info = await page.evaluate(() => {
+  const c = document.querySelector("canvas");
+  const wrap = document.querySelector(".teddy-wrap");
+  return { canvasExists: !!c, canvasSize: c?`${c.width}x${c.height} client ${c.clientWidth}x${c.clientHeight}`:null, wrapExists: !!wrap, wrapHTML: wrap?wrap.innerHTML.slice(0,160):null };
+});
+console.log("=== CANVAS INFO ==="); console.log(JSON.stringify(info,null,2));
+console.log("=== RIV/WASM REQUESTS ==="); console.log(net.join("\n")||"(none)");
+console.log("=== CONSOLE / ERRORS ==="); console.log(logs.join("\n")||"(none)");
+await browser.close();

@@ -12,9 +12,11 @@ const LoginCharacterRive = dynamic(() => import("./LoginCharacterRive"), { ssr: 
 const ASSET_WAIT_MS = 1500;
 
 /**
- * The login stage: the Rive "Teddy" character sits above the card and reacts
- * to the form — it follows the email as you type, covers its eyes for the
- * password, and celebrates or slumps on the result.
+ * The login stage: the Rive "Teddy" character sits at the top of a light card
+ * (the character's own artwork carries a matching light panel, so the card and
+ * the character blend into one surface) and reacts to the form — it follows
+ * the email as you type, covers its eyes for the password, and celebrates or
+ * slumps on the result.
  */
 export default function LoginScene(formProps) {
   const reducedMotion = useReducedMotion();
@@ -36,12 +38,17 @@ export default function LoginScene(formProps) {
 
   return (
     <div className="stage">
-      <div className="stage-inner">
+      <motion.div
+        className="card"
+        initial={reducedMotion ? false : { opacity: 0, y: 26, scale: 0.94 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1.1, 0.28, 1] }}
+      >
         <motion.div
-          className="teddy-wrap"
-          initial={reducedMotion ? false : { opacity: 0, y: 24, scale: 0.9 }}
-          animate={ready ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 24, scale: 0.9 }}
-          transition={{ duration: 0.6, ease: [0.22, 1.1, 0.28, 1] }}
+          className="teddy-slot"
+          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+          animate={ready ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <LoginCharacterRive
             checking={checking}
@@ -52,15 +59,8 @@ export default function LoginScene(formProps) {
           />
         </motion.div>
 
-        <motion.div
-          className="card"
-          initial={reducedMotion ? false : { opacity: 0, y: 26, scale: 0.94 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.08, ease: [0.22, 1.1, 0.28, 1] }}
-        >
-          <LoginForm fieldsVisible reducedMotion={reducedMotion} {...formProps} />
-        </motion.div>
-      </div>
+        <LoginForm fieldsVisible reducedMotion={reducedMotion} {...formProps} />
+      </motion.div>
 
       <style jsx>{`
         .stage {
@@ -77,53 +77,46 @@ export default function LoginScene(formProps) {
             linear-gradient(160deg, #12183a 0%, #1b1f4b 55%, #131736 100%);
           overflow: hidden;
         }
-        .stage-inner {
+        /* Both the card and the character's own panel are this same light blue-
+           grey (sampled from the .riv: rgb(214,226,234)), so the character
+           blends seamlessly into the top of the card. */
+        :global(.card) {
           position: relative;
           width: 100%;
-          max-width: 440px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
+          max-width: 420px;
+          border-radius: 22px;
+          padding: 8px 30px 26px;
+          background: #d6e2ea;
+          box-shadow:
+            0 42px 80px -28px rgba(20, 22, 70, 0.9),
+            0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+          overflow: hidden;
         }
-        /* The teddy sits on top of the card and overlaps its upper edge so it
-           reads as peeking over the form. */
-        .teddy-wrap {
+        /* The character sits flush at the top; its artwork already includes the
+           light panel, so no gap or seam shows against the card. */
+        :global(.teddy-slot) {
           position: relative;
-          z-index: 3;
-          width: 260px;
-          height: 260px;
-          margin-bottom: -54px;
+          z-index: 2;
+          width: 220px;
+          height: 200px;
+          margin: 0 auto -6px;
           pointer-events: none;
         }
         :global(.teddy-art) {
           width: 100%;
           height: 100%;
           display: block;
-          filter: drop-shadow(0 20px 26px rgba(10, 12, 45, 0.4));
-        }
-        :global(.card) {
-          position: relative;
-          z-index: 2;
-          width: 100%;
-          border-radius: 18px;
-          padding: 62px 34px 28px;
-          background: linear-gradient(150deg, #6167f7 0%, #5a5ff2 46%, #5257ee 100%);
-          box-shadow:
-            0 42px 80px -28px rgba(20, 22, 70, 0.9),
-            0 0 0 1px rgba(255, 255, 255, 0.09) inset;
-          overflow: visible;
         }
         @media (max-width: 620px) {
           .stage {
             padding: 28px 16px;
           }
-          .teddy-wrap {
-            width: 210px;
-            height: 210px;
-            margin-bottom: -44px;
-          }
           :global(.card) {
-            padding: 52px 22px 24px;
+            padding: 6px 20px 22px;
+          }
+          :global(.teddy-slot) {
+            width: 190px;
+            height: 172px;
           }
         }
       `}</style>

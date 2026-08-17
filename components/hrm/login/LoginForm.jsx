@@ -228,14 +228,14 @@ export default function LoginForm({
           padding: 3px;
         }
         .title {
-          color: #fff;
+          color: #20264a;
           font-size: 25px;
           font-weight: 800;
           letter-spacing: -0.4px;
           line-height: 1.15;
         }
         .sub {
-          color: rgba(255, 255, 255, 0.82);
+          color: #5b6472;
           font-size: 13px;
           margin-top: 5px;
         }
@@ -257,13 +257,13 @@ export default function LoginForm({
         :global(.card .cap) {
           display: block;
           text-align: center;
-          color: rgba(255, 255, 255, 0.94);
+          color: #39415a;
           font-size: 12.5px;
           font-weight: 600;
           margin-bottom: 7px;
         }
         .req {
-          color: #ffd9a0;
+          color: #e11d48;
         }
         :global(.card .row) {
           margin-bottom: 14px;
@@ -273,21 +273,20 @@ export default function LoginForm({
           align-items: center;
           gap: 9px;
           background: #fff;
+          border: 1px solid #c4cedb;
           border-radius: 9px;
           padding: 0 12px;
           height: 46px;
-          box-shadow: 0 2px 0 rgba(19, 21, 70, 0.12);
-          transition: box-shadow 0.18s ease;
+          box-shadow: 0 1px 2px rgba(19, 21, 70, 0.06);
+          transition: box-shadow 0.18s ease, border-color 0.18s ease;
         }
         .ctrl.on {
-          box-shadow:
-            0 2px 0 rgba(19, 21, 70, 0.12),
-            0 0 0 3px rgba(255, 255, 255, 0.42);
+          border-color: #5a5ff2;
+          box-shadow: 0 0 0 3px rgba(90, 95, 242, 0.22);
         }
         .ctrl.bad {
-          box-shadow:
-            0 2px 0 rgba(19, 21, 70, 0.12),
-            0 0 0 3px rgba(248, 113, 113, 0.75);
+          border-color: #f87171;
+          box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.28);
         }
         .ctrl :global(.ico) {
           color: #9aa3b2;
@@ -319,7 +318,7 @@ export default function LoginForm({
           margin-top: 5px;
           font-size: 11.5px;
           font-weight: 600;
-          color: #ffd2d2;
+          color: #dc2626;
           text-align: center;
         }
         :global(.card .go) {
@@ -363,9 +362,10 @@ export default function LoginForm({
         .forgot {
           font-size: 12px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.9);
+          color: #4b5563;
         }
         .forgot:hover {
+          color: #5a5ff2;
           text-decoration: underline;
         }
         .secure {
@@ -373,7 +373,7 @@ export default function LoginForm({
           align-items: center;
           gap: 6px;
           font-size: 11.5px;
-          color: rgba(255, 255, 255, 0.72);
+          color: #6b7280;
         }
         .dot {
           width: 6px;
