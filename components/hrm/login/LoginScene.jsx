@@ -72,9 +72,9 @@ export default function LoginScene(formProps) {
           justify-content: center;
           padding: 40px 24px;
           background:
-            radial-gradient(1100px 620px at 18% 12%, #2b3570 0%, transparent 60%),
-            radial-gradient(900px 560px at 84% 86%, #3a2f74 0%, transparent 62%),
-            linear-gradient(160deg, #12183a 0%, #1b1f4b 55%, #131736 100%);
+            radial-gradient(1000px 600px at 18% 8%, #1d5878 0%, transparent 58%),
+            radial-gradient(880px 560px at 86% 92%, #12617c 0%, transparent 60%),
+            linear-gradient(160deg, #071a2c 0%, #0d3149 52%, #08243a 100%);
           overflow: hidden;
         }
         /* Both the card and the character's own panel are this same light blue-
@@ -83,13 +83,13 @@ export default function LoginScene(formProps) {
         :global(.card) {
           position: relative;
           width: 100%;
-          max-width: 420px;
-          border-radius: 22px;
-          padding: 94px 30px 26px;
-          background: #d6e2ea;
+          max-width: 430px;
+          border-radius: 26px;
+          padding: 118px 34px 30px;
+          background: linear-gradient(180deg, #e4eef4 0%, #d3e0e9 100%);
           box-shadow:
-            0 42px 80px -28px rgba(20, 22, 70, 0.9),
-            0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+            0 50px 90px -30px rgba(6, 20, 40, 0.85),
+            0 0 0 1px rgba(255, 255, 255, 0.6) inset;
           /* visible so the avatar can break the card's top edge */
           overflow: visible;
         }
@@ -102,18 +102,18 @@ export default function LoginScene(formProps) {
            its own inline transform on this element and would clobber it. */
         :global(.teddy-slot) {
           position: absolute;
-          top: -86px;
+          top: -114px;
           left: 0;
           right: 0;
           margin: 0 auto;
           z-index: 3;
-          width: 172px;
-          height: 172px;
+          width: 210px;
+          height: 210px;
           border-radius: 50%;
           overflow: hidden;
           background: #d6e2ea;
-          border: 5px solid #eaf1f6;
-          box-shadow: 0 16px 32px -12px rgba(20, 22, 70, 0.55);
+          border: 6px solid #eef4f8;
+          box-shadow: 0 20px 40px -14px rgba(6, 20, 40, 0.6);
           pointer-events: none;
         }
         /* Zoom into the face: the canvas is larger than the badge and shifted so
@@ -121,10 +121,10 @@ export default function LoginScene(formProps) {
         :global(.teddy-art) {
           position: absolute;
           left: 50%;
-          top: -4px;
+          top: -5px;
           transform: translateX(-50%);
-          width: 210px;
-          height: 191px;
+          width: 256px;
+          height: 233px;
           display: block;
         }
         @media (max-width: 620px) {

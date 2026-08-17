@@ -408,17 +408,20 @@ export default function ClientLayout({ children }) {
     setIsLoading(false);
   }, [pathname, router, showSidebar]);
 
+  // Public pages (login, register, etc.) have no auth gate, so render them
+  // immediately — going through the isLoading spinner first makes the login
+  // page flash/"double refresh" on arrival.
+  if (!showSidebar) {
+    return (
+      <div className="h-screen overflow-y-auto bg-gray-50">{children}</div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
-    );
-  }
-
-  if (!showSidebar) {
-    return (
-      <div className="h-screen overflow-y-auto bg-gray-50">{children}</div>
     );
   }
 
