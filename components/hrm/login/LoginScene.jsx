@@ -85,21 +85,24 @@ export default function LoginScene(formProps) {
           width: 100%;
           max-width: 420px;
           border-radius: 22px;
-          padding: 8px 30px 26px;
+          padding: 84px 30px 26px;
           background: #d6e2ea;
           box-shadow:
             0 42px 80px -28px rgba(20, 22, 70, 0.9),
             0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-          overflow: hidden;
+          /* visible so the character can rise above the card's top edge */
+          overflow: visible;
         }
-        /* The character sits flush at the top; its artwork already includes the
-           light panel, so no gap or seam shows against the card. */
+        /* The character rises above the card: its artwork carries a light panel
+           the same colour as the card, so the part that sits over the card
+           blends in while the head (and its rounded panel) pokes out the top as
+           a bump. */
         :global(.teddy-slot) {
           position: relative;
           z-index: 2;
-          width: 220px;
-          height: 200px;
-          margin: 0 auto -6px;
+          width: 230px;
+          height: 210px;
+          margin: -104px auto -12px;
           pointer-events: none;
         }
         :global(.teddy-art) {

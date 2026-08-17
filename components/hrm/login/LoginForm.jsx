@@ -71,7 +71,6 @@ export default function LoginForm({
   return (
     <>
       <div className="head">
-        <Image src="/A2ITLogo.png" alt="A2IT" width={34} height={34} className="mark" />
         <h1 className="title">Welcome Back</h1>
         <p className="sub">Sign in to your A2it HRM Portal account</p>
       </div>
@@ -80,9 +79,7 @@ export default function LoginForm({
         {errors.general && <div className="gen-err">{errors.general}</div>}
 
         <form onSubmit={handleSubmit} noValidate>
-          <motion.label className="cap" {...anim(0)}>
-            Enter your email address <span className="req">*</span>
-          </motion.label>
+          
           <motion.div className="row" {...anim(1)}>
             <div className={`ctrl ${errors.email ? "bad" : ""} ${isFocused.email ? "on" : ""}`}>
               <Mail className="ico" size={17} strokeWidth={1.9} />
@@ -92,16 +89,14 @@ export default function LoginForm({
                 onChange={(e) => setEmail(e.target.value)}
                 onFocus={() => setIsFocused((p) => ({ ...p, email: true }))}
                 onBlur={() => setIsFocused((p) => ({ ...p, email: false }))}
-                placeholder="Ex. yourname@company.com"
+                placeholder="yourname@gmail.com"
                 autoComplete="email"
               />
             </div>
             {errors.email && <span className="msg">{errors.email}</span>}
           </motion.div>
 
-          <motion.label className="cap" {...anim(2)}>
-            Enter your password <span className="req">*</span>
-          </motion.label>
+          
           <motion.div className="row" {...anim(3)}>
             <div className={`ctrl ${errors.password ? "bad" : ""} ${isFocused.password ? "on" : ""}`}>
               <Lock className="ico" size={17} strokeWidth={1.9} />
