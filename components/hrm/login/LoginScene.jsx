@@ -121,10 +121,10 @@ export default function LoginScene(formProps) {
         :global(.teddy-art) {
           position: absolute;
           left: 50%;
-          top: -6px;
+          top: -46px;
           transform: translateX(-50%);
-          width: 334px;
-          height: 304px;
+          width: 400px;
+          height: 365px;
           display: block;
         }
         @media (max-width: 620px) {
