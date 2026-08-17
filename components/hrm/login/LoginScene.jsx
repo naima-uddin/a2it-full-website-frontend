@@ -85,7 +85,7 @@ export default function LoginScene(formProps) {
           width: 100%;
           max-width: 430px;
           border-radius: 26px;
-          padding: 118px 34px 30px;
+          padding: 150px 34px 30px;
           background: linear-gradient(180deg, #e4eef4 0%, #d3e0e9 100%);
           box-shadow:
             0 50px 90px -30px rgba(6, 20, 40, 0.85),
@@ -102,18 +102,18 @@ export default function LoginScene(formProps) {
            its own inline transform on this element and would clobber it. */
         :global(.teddy-slot) {
           position: absolute;
-          top: -114px;
+          top: -150px;
           left: 0;
           right: 0;
           margin: 0 auto;
           z-index: 3;
-          width: 210px;
-          height: 210px;
+          width: 274px;
+          height: 274px;
           border-radius: 50%;
           overflow: hidden;
           background: #d6e2ea;
-          border: 6px solid #eef4f8;
-          box-shadow: 0 20px 40px -14px rgba(6, 20, 40, 0.6);
+          border: 7px solid #eef4f8;
+          box-shadow: 0 24px 46px -16px rgba(6, 20, 40, 0.62);
           pointer-events: none;
         }
         /* Zoom into the face: the canvas is larger than the badge and shifted so
@@ -121,10 +121,10 @@ export default function LoginScene(formProps) {
         :global(.teddy-art) {
           position: absolute;
           left: 50%;
-          top: -5px;
+          top: -6px;
           transform: translateX(-50%);
-          width: 256px;
-          height: 233px;
+          width: 334px;
+          height: 304px;
           display: block;
         }
         @media (max-width: 620px) {
