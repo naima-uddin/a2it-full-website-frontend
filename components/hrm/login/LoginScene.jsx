@@ -85,29 +85,46 @@ export default function LoginScene(formProps) {
           width: 100%;
           max-width: 420px;
           border-radius: 22px;
-          padding: 84px 30px 26px;
+          padding: 94px 30px 26px;
           background: #d6e2ea;
           box-shadow:
             0 42px 80px -28px rgba(20, 22, 70, 0.9),
             0 0 0 1px rgba(255, 255, 255, 0.5) inset;
-          /* visible so the character can rise above the card's top edge */
+          /* visible so the avatar can break the card's top edge */
           overflow: visible;
         }
-        /* The character rises above the card: its artwork carries a light panel
-           the same colour as the card, so the part that sits over the card
-           blends in while the head (and its rounded panel) pokes out the top as
-           a bump. */
+        /* The character rides in a circular badge that overlaps the top edge of
+           the card, so its head pokes out above the form. The circle crops away
+           the artwork's own light panel and baked shadow, leaving a clean badge
+           of the character's face. The badge fill matches the artwork panel so
+           there is no seam behind the character. */
+        /* Centre with left/right/margin, not translateX — framer-motion writes
+           its own inline transform on this element and would clobber it. */
         :global(.teddy-slot) {
-          position: relative;
-          z-index: 2;
-          width: 230px;
-          height: 210px;
-          margin: -104px auto -12px;
+          position: absolute;
+          top: -86px;
+          left: 0;
+          right: 0;
+          margin: 0 auto;
+          z-index: 3;
+          width: 172px;
+          height: 172px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: #d6e2ea;
+          border: 5px solid #eaf1f6;
+          box-shadow: 0 16px 32px -12px rgba(20, 22, 70, 0.55);
           pointer-events: none;
         }
+        /* Zoom into the face: the canvas is larger than the badge and shifted so
+           the head/face sits at the badge centre. */
         :global(.teddy-art) {
-          width: 100%;
-          height: 100%;
+          position: absolute;
+          left: 50%;
+          top: -4px;
+          transform: translateX(-50%);
+          width: 210px;
+          height: 191px;
           display: block;
         }
         @media (max-width: 620px) {
