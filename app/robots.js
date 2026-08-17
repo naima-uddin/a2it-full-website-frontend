@@ -8,17 +8,17 @@ export default function robots() {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/private/", "/temp/", "/_next/"],
+        disallow: ["/admin/", "/api/", "/private/", "/temp/", "/_next/", "/hrm", "/hrm/"],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/private/"],
+        disallow: ["/admin/", "/api/", "/private/", "/hrm", "/hrm/"],
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/admin/", "/api/", "/private/"],
+        disallow: ["/admin/", "/api/", "/private/", "/hrm", "/hrm/"],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

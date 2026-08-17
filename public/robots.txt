@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /hrm
+Disallow: /hrm/
 
 Sitemap: https://a2itltd.com/sitemap.xml
