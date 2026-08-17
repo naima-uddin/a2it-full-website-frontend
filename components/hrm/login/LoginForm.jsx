@@ -240,9 +240,8 @@ export default function LoginForm({
           margin-top: 5px;
         }
 
-        /* Keeps the copy clear of the character standing at the card's left edge. */
         .pane {
-          padding-left: 112px;
+          padding-left: 0;
         }
 
         .gen-err {
@@ -394,9 +393,6 @@ export default function LoginForm({
         }
 
         @media (max-width: 860px) {
-          .pane {
-            padding-left: 84px;
-          }
           .title {
             font-size: 22px;
           }

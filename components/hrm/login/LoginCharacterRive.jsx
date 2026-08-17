@@ -1,40 +1,43 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRive, useStateMachineInput } from "@rive-app/react-canvas";
+import { useRive, useStateMachineInput, RuntimeLoader } from "@rive-app/react-canvas";
+
+// Load the WASM from our own /public instead of the default CDN (unpkg), so a
+// blocked or slow CDN can never leave the character blank. The file is copied
+// from node_modules/@rive-app/canvas/rive.wasm and must match that version.
+if (typeof window !== "undefined") {
+  RuntimeLoader.setWasmUrl("/rive.wasm");
+}
 
 /**
- * Rive-driven login character.
+ * Rive-driven login character (the "Teddy" login machine from the Rive
+ * community, by JcToon). It sits above the form and reacts to it:
  *
- * This replaces the Lottie walk-cycle with an interactive Rive state machine
- * so the character can genuinely react: walk in, get startled when the form
- * appears, then lean against the card.
+ *   - watches the email as it is typed (eyes track along the field)
+ *   - covers its eyes with its hands while the password is focused
+ *   - celebrates on a successful login, slumps on a failed one
  *
- * ─── CONTRACT (the .riv file MUST match these names exactly) ──────────────
- *
- *   File            public/animations/login-character.riv
- *   State Machine   "Login"
- *   Number input    "stage"   drives the pose:
- *                     0 → walk   (walk-cycle loop)
- *                     1 → arrive (stopped, standing idle)
- *                     2 → surprise (startled reaction)
- *                     3 → lean   (relaxed, leaning on the card)
- *
- * In the Rive editor: build one State Machine called `Login`, add a Number
- * input called `stage`, and wire transitions so stage 0→1→2→3 plays each
- * animation. That's all the code below needs.
- *
- * If you use a Trigger-based machine instead of a number, tell me and I'll
- * switch to useStateMachineInput triggers — but the number is the simplest.
+ * Verified against the .riv binary:
+ *   File           public/animations/login-character.riv
+ *   State Machine  "Login Machine"
+ *   Inputs         isChecking (bool)  - watching the email
+ *                  numLook   (number 0-100) - horizontal eye tracking
+ *                  isHandsUp (bool)   - covering eyes (password)
+ *                  trigSuccess (trigger)
+ *                  trigFail    (trigger)
  */
 
 const SRC = "/animations/login-character.riv";
-const STATE_MACHINE = "Login";
+const STATE_MACHINE = "Login Machine";
 
-/** Maps our timeline poses to the `stage` number the .riv expects. */
-const STAGE_VALUE = { walk: 0, arrive: 1, surprise: 2, lean: 3 };
-
-export default function LoginCharacterRive({ pose = "walk", onReady }) {
+export default function LoginCharacterRive({
+  checking = false, // watching the email being typed
+  handsUp = false, // covering its eyes (password)
+  look = 0, // 0-100: how far along the email the eyes track
+  authStatus = null, // "success" | "fail" | null → fires the matching trigger
+  onReady,
+}) {
   const { rive, RiveComponent } = useRive({
     src: SRC,
     stateMachines: STATE_MACHINE,
@@ -43,12 +46,28 @@ export default function LoginCharacterRive({ pose = "walk", onReady }) {
     onLoadError: () => onReady?.(), // never stall the scene on a bad asset
   });
 
-  const stageInput = useStateMachineInput(rive, STATE_MACHINE, "stage");
+  const isChecking = useStateMachineInput(rive, STATE_MACHINE, "isChecking");
+  const numLook = useStateMachineInput(rive, STATE_MACHINE, "numLook");
+  const isHandsUp = useStateMachineInput(rive, STATE_MACHINE, "isHandsUp");
+  const trigSuccess = useStateMachineInput(rive, STATE_MACHINE, "trigSuccess");
+  const trigFail = useStateMachineInput(rive, STATE_MACHINE, "trigFail");
 
   useEffect(() => {
-    if (!stageInput) return;
-    stageInput.value = STAGE_VALUE[pose] ?? 0;
-  }, [pose, stageInput]);
+    if (isChecking) isChecking.value = checking;
+  }, [checking, isChecking]);
 
-  return <RiveComponent className="char-art" />;
+  useEffect(() => {
+    if (isHandsUp) isHandsUp.value = handsUp;
+  }, [handsUp, isHandsUp]);
+
+  useEffect(() => {
+    if (numLook) numLook.value = look;
+  }, [look, numLook]);
+
+  useEffect(() => {
+    if (authStatus === "success") trigSuccess?.fire();
+    else if (authStatus === "fail") trigFail?.fire();
+  }, [authStatus, trigSuccess, trigFail]);
+
+  return <RiveComponent className="teddy-art" />;
 }

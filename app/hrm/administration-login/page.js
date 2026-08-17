@@ -16,6 +16,8 @@ const page = () => {
   const [errors, setErrors] = useState({ email: "", password: "", general: "" });
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState({ email: false, password: false });
+  // Drives the Rive character's success/fail reaction. null → not fired yet.
+  const [authStatus, setAuthStatus] = useState(null);
 
   // Real-time validation
   useEffect(() => {
@@ -74,6 +76,7 @@ const page = () => {
     }
 
     setErrors({ email: "", password: "", general: "" });
+    setAuthStatus(null); // reset so a repeated result re-fires the reaction
     setLoading(true);
 
     const loadingToast = toast.loading("Authenticating...", { position: "top-right", duration: Infinity });
@@ -199,6 +202,8 @@ const page = () => {
         style: { background: roleColor, color: "white", fontWeight: "500" },
       });
 
+      setAuthStatus("success"); // teddy celebrates
+
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       switch (data.role) {
@@ -225,6 +230,7 @@ const page = () => {
         style: { background: "#EF4444", color: "white" },
       });
       setErrors((prev) => ({ ...prev, general: errorMsg }));
+      setAuthStatus("fail"); // teddy slumps
     } finally {
       setLoading(false);
     }
@@ -243,6 +249,7 @@ const page = () => {
       isFocused={isFocused}
       setIsFocused={setIsFocused}
       handleSubmit={handleSubmit}
+      authStatus={authStatus}
     />
   );
 };
