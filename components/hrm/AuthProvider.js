@@ -380,7 +380,7 @@ export default function ClientLayout({ children }) {
 
   const noSidebarPages = [
     "/hrm",
-    "/hrm/administration-login",
+    "/hrm/staff-login",
     "/hrm/register",
     "/hrm/forgot-password",
     "/hrm/reset-password",
@@ -401,7 +401,7 @@ export default function ClientLayout({ children }) {
     setIsAuthenticated(isAuth);
 
     if (!isAuth && showSidebar) {
-      router.replace("/hrm/administration-login");
+      router.replace("/hrm/staff-login");
       return;
     }
 
