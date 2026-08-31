@@ -4,17 +4,12 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { hrmLogin } from "@/lib/hrmSession";
 
 /**
- * Unified login for the whole platform.
+ * Website / CMS dashboard login.
  *
- * One form, two systems:
- *   1. Website / CMS accounts  -> POST /api/auth/login      -> /dashboard
- *   2. HRM accounts            -> POST /api/v1/unified-login -> /hrm/...
- *
- * The website login is attempted first; if those credentials are not a CMS
- * account, the same credentials are tried against the HRM system.
+ * This form authenticates ONLY against website/CMS accounts and redirects to
+ * /dashboard. HRM employees must sign in through /hrm/staff-login instead.
  */
 export default function Page() {
   const router = useRouter();
@@ -31,7 +26,7 @@ export default function Page() {
     setError("");
     setStatus("Checking your credentials...");
 
-    // 1) Website / CMS dashboard
+    // Website / CMS dashboard only. HRM accounts must use /hrm/staff-login.
     const websiteResult = await login(email, password);
     if (websiteResult.success) {
       setStatus("Signed in to the Website Dashboard — redirecting...");
@@ -40,24 +35,11 @@ export default function Page() {
       return;
     }
 
-    // 2) HRM system
-    setStatus("Checking the HRM system...");
-    const hrmResult = await hrmLogin(email, password);
-    if (hrmResult.success) {
-      setStatus(
-        `Signed in to HRM as ${hrmResult.role} — redirecting...`.trim(),
-      );
-      router.push(hrmResult.redirectTo);
-      setLoading(false);
-      return;
-    }
-
     setStatus("");
     setError(
-      websiteResult.message === "Could not reach the HRM server." ||
-        hrmResult.message === "Could not reach the HRM server."
+      websiteResult.message === "Could not reach the server."
         ? "Server unreachable. Please make sure the backend is running."
-        : "Invalid email or password for the Website Dashboard or HRM.",
+        : "Invalid email or password for the Website Dashboard.",
     );
     setLoading(false);
   };
@@ -105,7 +87,7 @@ export default function Page() {
               Login to continue
             </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Website Dashboard and HRM accounts both work here.
+              Sign in with your Website Dashboard account.
             </p>
           </div>
 
@@ -174,7 +156,7 @@ export default function Page() {
           <p className="mt-6 text-center text-sm text-slate-500">
             HRM employee?{" "}
             <Link
-              href="/hrm"
+              href="/hrm/staff-login"
               className="font-semibold text-slate-900 underline underline-offset-4"
             >
               Use the HRM login
