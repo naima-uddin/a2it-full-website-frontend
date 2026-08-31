@@ -3,9 +3,10 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import DashboardShell from "./components/DashboardShell";
 
 export default function ProtectedLayout({ children }) {
-  const { user, token, loading } = useAuth();
+  const { token, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -29,5 +30,7 @@ export default function ProtectedLayout({ children }) {
     return null;
   }
 
-  return <>{children}</>;
+  // The sidebar shell lives in the layout so it stays mounted across route
+  // changes. Only {children} swaps on navigation.
+  return <DashboardShell>{children}</DashboardShell>;
 }
