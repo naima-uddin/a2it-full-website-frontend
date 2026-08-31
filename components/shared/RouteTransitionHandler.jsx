@@ -13,6 +13,15 @@ function RouteTransitionContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Routes that ship their own chrome/loading (dashboard shell, HRM module,
+  // auth pages). The global full-screen transition overlay must NOT fire here,
+  // otherwise it covers the persistent sidebar and looks like a full reload.
+  const isAppShellPath = (path = "") =>
+    path.startsWith("/dashboard") ||
+    path === "/hrm" ||
+    path.startsWith("/hrm/") ||
+    path.startsWith("/login");
+
   // formatPageName ফাংশন
   const formatPageName = (path) => {
     if (path === '/') return 'Home';
@@ -62,7 +71,11 @@ function RouteTransitionContent() {
         const targetUrl = new URL(link.href, window.location.origin);
         const currentUrl = new URL(window.location.href);
         
-        if (targetUrl.pathname !== currentUrl.pathname) {
+        if (
+          targetUrl.pathname !== currentUrl.pathname &&
+          !isAppShellPath(targetUrl.pathname) &&
+          !isAppShellPath(currentUrl.pathname)
+        ) {
           const pageType = detectPageType(targetUrl.pathname);
           setCurrentPageType(pageType);
           setTargetPage(formatPageName(targetUrl.pathname));
@@ -107,7 +120,7 @@ function RouteTransitionContent() {
 
   // Route change detection (for Next.js navigation)
   useEffect(() => {
-    if (pathname) {
+    if (pathname && !isAppShellPath(pathname)) {
       const pageType = detectPageType(pathname);
       setCurrentPageType(pageType);
       setTargetPage(formatPageName(pathname));
