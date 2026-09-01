@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -44,6 +44,20 @@ const DashboardNav = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { logout, user } = useAuth();
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Lock background scroll while the mobile drawer is open.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   const menuItems = [
     {
@@ -123,67 +137,82 @@ const DashboardNav = () => {
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      {/* Mobile top bar (hamburger + brand) */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4">
         <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 bg-cyan-500 text-white rounded-lg"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+          aria-expanded={mobileMenuOpen}
+          className="-ml-2 rounded-lg p-2 text-slate-700 transition hover:bg-slate-100"
         >
-          {mobileMenuOpen ? (
-            <X className="w-6 h-6" />
-          ) : (
-            <Menu className="w-6 h-6" />
-          )}
+          <Menu className="h-6 w-6" />
         </button>
-      </div>
+        <Link
+          href="/dashboard"
+          className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#0066ff]"
+        >
+          A2IT Dashboard
+        </Link>
+      </header>
 
-      {/* Sidebar */}
-      <div
-        className={`fixed left-0 top-0 h-screen w-64 bg-white border-r border-slate-200 transition-transform duration-300 lg:translate-x-0 ${
-          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } z-40`}
+      {/* Sidebar drawer */}
+      <aside
+        className={`fixed left-0 top-0 z-40 flex h-screen w-72 max-w-[85vw] flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:w-64 lg:translate-x-0 lg:shadow-none ${
+          mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
       >
-        <div className="p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-2 p-6 pb-4">
           <Link
             href="/dashboard"
-            className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#0066ff] mb-26 text-center"
+            className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#0066ff]"
           >
-            A2IT Dashbaord
+            A2IT Dashboard
           </Link>
-
-          <nav className="space-y-2">
-            {menuItems.map((item) => (
-              <DashboardNavLink
-                key={item.id}
-                item={item}
-                pathname={pathname}
-                onClick={() => setMobileMenuOpen(false)}
-              />
-            ))}
-          </nav>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Close menu"
+            className="rounded-lg p-1 text-slate-500 transition hover:bg-slate-100 lg:hidden"
+          >
+            <X className="h-6 w-6" />
+          </button>
         </div>
 
+        {/* Scrollable nav */}
+        <nav className="flex-1 space-y-1 overflow-y-auto px-4 pb-4">
+          {menuItems.map((item) => (
+            <DashboardNavLink
+              key={item.id}
+              item={item}
+              pathname={pathname}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+          ))}
+        </nav>
+
         {/* User Info & Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-slate-200">
-          <div className="mb-4 pb-4 border-b border-slate-200">
+        <div className="border-t border-slate-200 p-4">
+          <div className="mb-4 border-b border-slate-200 pb-4">
             <p className="text-sm text-slate-500">Logged in as</p>
-            <p className="text-slate-900 font-semibold">{user?.name}</p>
-            <p className="text-xs text-cyan-600 capitalize">{user?.role}</p>
+            <p className="truncate font-semibold text-slate-900">
+              {user?.name}
+            </p>
+            <p className="text-xs capitalize text-cyan-600">{user?.role}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg transition"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-red-600 transition hover:bg-red-100"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="h-4 w-4" />
             Logout
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Mobile Overlay */}
+      {/* Mobile overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/30 z-30 lg:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         ></div>
       )}
@@ -202,7 +231,7 @@ export default function DashboardShell({ children }) {
       <DashboardNav />
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pt-14 lg:ml-64 lg:pt-0">
         <div className="p-4 lg:p-8">{children}</div>
       </div>
     </div>
