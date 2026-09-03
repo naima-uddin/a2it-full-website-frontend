@@ -1,34 +1,33 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  FaBullhorn,
-  FaCode,
-  FaMobileAlt,
-  FaPenNib,
-} from "react-icons/fa";
+import { ServiceIcon } from "@/lib/serviceIcons";
+import { fetchPublicServices } from "@/lib/api/services";
 
-const services = [
+// Shown until services load, and if the API is unavailable.
+const FALLBACK_SERVICES = [
   {
-    icon: <FaPenNib />,
+    icon: "FaPenNib",
     title: "Branding Strategy",
-    desc: "Strategic branding to define your unique story.",
+    description: "Strategic branding to define your unique story.",
   },
   {
-    icon: <FaBullhorn />,
+    icon: "FaBullhorn",
     title: "Digital Marketing",
-    desc: "Drive online success with data-driven strategies.",
+    description: "Drive online success with data-driven strategies.",
   },
   {
-    icon: <FaCode />,
+    icon: "FaCode",
     title: "Website Development",
-    desc: "Custom web development for your business.",
+    description: "Custom web development for your business.",
   },
   {
-    icon: <FaMobileAlt />,
+    icon: "FaMobileAlt",
     title: "Mobile Apps Development",
-    desc: "Feature-rich mobile apps for iOS & Android.",
+    description: "Feature-rich mobile apps for iOS & Android.",
   },
 ];
 
@@ -51,6 +50,21 @@ const item = {
 };
 
 export default function Service() {
+  const [services, setServices] = useState(FALLBACK_SERVICES);
+
+  useEffect(() => {
+    let active = true;
+    fetchPublicServices().then((data) => {
+      if (active && data.length > 0) {
+        // Show up to the first 4 services on the homepage highlight.
+        setServices(data.slice(0, 4));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <section className="min-h-[500px] h-auto py-12 md:py-16 lg:py-0 lg:h-[500px] flex items-center overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-8 md:gap-12 items-center w-full">
@@ -105,26 +119,40 @@ export default function Service() {
             viewport={{ once: true, amount: 0.2 }}
             className="space-y-4 sm:space-y-5"
           >
-            {services.map((itemData, index) => (
-              <motion.div
-                key={index}
-                variants={item}
-                className="flex gap-3 sm:gap-4 group items-start"
-              >
-                <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-lg bg-orange-100 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition text-base sm:text-lg">
-                  {itemData.icon}
-                </div>
+            {services.map((itemData, index) => {
+              const card = (
+                <>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-lg bg-orange-100 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition text-base sm:text-lg">
+                    <ServiceIcon name={itemData.icon} />
+                  </div>
 
-                <div>
-                  <h4 className="font-semibold text-gray-800 group-hover:text-orange-500 transition text-base sm:text-lg">
-                    {itemData.title}
-                  </h4>
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    {itemData.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+                  <div>
+                    <h4 className="font-semibold text-gray-800 group-hover:text-orange-500 transition text-base sm:text-lg">
+                      {itemData.title}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      {itemData.description}
+                    </p>
+                  </div>
+                </>
+              );
+
+              return (
+                <motion.div
+                  key={itemData._id || index}
+                  variants={item}
+                  className="flex gap-3 sm:gap-4 group items-start"
+                >
+                  {itemData.path ? (
+                    <Link href={itemData.path} className="flex gap-3 sm:gap-4 group items-start w-full">
+                      {card}
+                    </Link>
+                  ) : (
+                    card
+                  )}
+                </motion.div>
+              );
+            })}
           </motion.div>
 
         </div>

@@ -1,10 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { motion } from "framer-motion";
-import { Plus, Trash2, Edit2, Search } from "lucide-react";
+import { Plus, Trash2, Edit2, Search, Upload, EyeOff, FileText } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
+import {
+  ServiceIcon,
+  SERVICE_ICON_NAMES,
+  DEFAULT_SERVICE_ICON,
+} from "@/lib/serviceIcons";
 
 export default function ServicesPage() {
   const { token, isAdmin, isModerator } = useAuth();
@@ -14,18 +20,32 @@ export default function ServicesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     title: "",
     description: "",
-    icon: "Code",
+    icon: DEFAULT_SERVICE_ICON,
     features: "",
     category: "development",
     path: "",
     color: "bg-[#0066ff]",
-  });
+    image: "",
+    order: 0,
+    isActive: true,
+  };
+  const [formData, setFormData] = useState(emptyForm);
+  const [uploading, setUploading] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
+
+  // Auto-suggest a URL path from the title while creating a new service.
+  const slugify = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
 
   const formatCategoryLabel = (value) =>
     String(value || "")
@@ -198,18 +218,40 @@ export default function ServicesPage() {
         fetchServices();
         setShowForm(false);
         setEditingService(null);
-        setFormData({
-          title: "",
-          description: "",
-          icon: "Code",
-          features: "",
-          category: "development",
-          path: "",
-          color: "bg-[#0066ff]",
-        });
+        setFormData({ ...emptyForm, category: categories[0]?.name || "development" });
       }
     } catch (error) {
       console.error("Error saving service:", error);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const body = new FormData();
+      body.append("image", file);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/upload/services`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body,
+        },
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        const url = data.url || data.imageUrl || data.secure_url || data.image;
+        if (url) setFormData((prev) => ({ ...prev, image: url }));
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -255,25 +297,29 @@ export default function ServicesPage() {
               Create and manage your service offerings{" "}
             </p>
           </div>
-          <button
-            onClick={() => {
-              setEditingService(null);
-              setFormData({
-                title: "",
-                description: "",
-                icon: "Code",
-                features: "",
-                category: categories[0]?.name || "development",
-                path: "",
-                color: "bg-[#0066ff]",
-              });
-              setShowForm(!showForm);
-            }}
-            className="bg-gradient-to-r from-[#00f0ff] to-[#0066ff] text-[#0a0a12] font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            New Service
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/services/content"
+              className="border border-slate-300 bg-white hover:border-[#0066ff] hover:text-[#0066ff] text-slate-700 font-semibold px-5 py-3 rounded-lg flex items-center gap-2 transition"
+            >
+              <FileText className="w-5 h-5" />
+              Edit Page Content
+            </Link>
+            <button
+              onClick={() => {
+                setEditingService(null);
+                setFormData({
+                  ...emptyForm,
+                  category: categories[0]?.name || "development",
+                });
+                setShowForm(!showForm);
+              }}
+              className="bg-gradient-to-r from-[#00f0ff] to-[#0066ff] text-[#0a0a12] font-semibold px-6 py-3 rounded-lg flex items-center gap-2"
+            >
+              <Plus className="w-5 h-5" />
+              New Service
+            </button>
+          </div>
         </motion.div>
 
         {showForm && (
@@ -294,9 +340,18 @@ export default function ServicesPage() {
                   type="text"
                   placeholder="Service Title"
                   value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const title = e.target.value;
+                    setFormData((prev) => ({
+                      ...prev,
+                      title,
+                      // Auto-fill path from title while creating (not editing).
+                      path:
+                        !editingService && (!prev.path || prev.path === `/services/${slugify(prev.title)}`)
+                          ? `/services/${slugify(title)}`
+                          : prev.path,
+                    }));
+                  }}
                   required
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 shadow-sm focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 outline-none transition"
                 />
@@ -406,6 +461,113 @@ export default function ServicesPage() {
                 />
               </div>
 
+              {/* ICON PICKER */}
+              <div className="md:col-span-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <label className="mb-3 block text-sm font-semibold text-slate-700">
+                  Icon{" "}
+                  <span className="font-normal text-slate-400">
+                    (shown in navbar, homepage &amp; service page)
+                  </span>
+                </label>
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-2">
+                  {SERVICE_ICON_NAMES.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      title={name}
+                      onClick={() => setFormData({ ...formData, icon: name })}
+                      className={`flex items-center justify-center aspect-square rounded-lg border text-lg transition ${
+                        formData.icon === name
+                          ? "border-[#0066ff] bg-[#0066ff] text-white shadow-md"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#0066ff]/50"
+                      }`}
+                    >
+                      <ServiceIcon name={name} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* IMAGE + ORDER */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  Cover Image{" "}
+                  <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  {formData.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={formData.image}
+                      alt="preview"
+                      className="w-16 h-16 rounded-lg object-cover border border-slate-200"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
+                      <ServiceIcon name={formData.icon} />
+                    </div>
+                  )}
+                  <label className="flex-1 cursor-pointer">
+                    <div className="flex items-center justify-center gap-2 px-4 py-3 border border-dashed border-slate-300 rounded-xl text-slate-600 hover:border-[#0066ff] transition text-sm">
+                      <Upload className="w-4 h-4" />
+                      {uploading ? "Uploading..." : "Upload image"}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+                {formData.image && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, image: "" })}
+                    className="mt-2 text-xs text-red-500 hover:underline"
+                  >
+                    Remove image
+                  </button>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.order}
+                    onChange={(e) =>
+                      setFormData({ ...formData, order: e.target.value })
+                    }
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 shadow-sm focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 outline-none transition"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Lower number shows first in the navbar.
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isActive: e.target.checked })
+                    }
+                    className="w-5 h-5 accent-[#0066ff]"
+                  />
+                  <span className="text-sm font-semibold text-slate-700 flex items-center gap-1">
+                    {formData.isActive ? "Active" : <><EyeOff className="w-4 h-4" /> Hidden</>}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    (uncheck to hide from the public site)
+                  </span>
+                </label>
+              </div>
+
               <div className="md:col-span-2 flex gap-3">
                 <button
                   type="submit"
@@ -447,13 +609,16 @@ export default function ServicesPage() {
                 <thead className="bg-slate-100">
                   <tr>
                     <th className="px-6 py-3 text-left text-slate-600 text-sm font-semibold">
-                      Title
+                      Service
                     </th>
                     <th className="px-6 py-3 text-left text-slate-600 text-sm font-semibold">
                       Category
                     </th>
                     <th className="px-6 py-3 text-left text-slate-600 text-sm font-semibold">
                       Features
+                    </th>
+                    <th className="px-6 py-3 text-left text-slate-600 text-sm font-semibold">
+                      Status
                     </th>
                     <th className="px-6 py-3 text-left text-slate-600 text-sm font-semibold">
                       Actions
@@ -464,7 +629,17 @@ export default function ServicesPage() {
                   {filteredServices.map((service) => (
                     <tr key={service._id} className="hover:bg-slate-50">
                       <td className="px-6 py-4 text-slate-900 font-medium">
-                        {service.title}
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#0066ff]/10 text-[#0066ff]">
+                            <ServiceIcon name={service.icon} />
+                          </span>
+                          <div>
+                            <div>{service.title}</div>
+                            <div className="text-xs text-slate-400">
+                              {service.path}
+                            </div>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-slate-600 capitalize">
                         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
@@ -474,6 +649,17 @@ export default function ServicesPage() {
                       <td className="px-6 py-4 text-slate-600 text-sm">
                         {service.features.length} items
                       </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            service.isActive
+                              ? "bg-green-100 text-green-700"
+                              : "bg-slate-200 text-slate-500"
+                          }`}
+                        >
+                          {service.isActive ? "Active" : "Hidden"}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 flex gap-2">
                         <button
                           onClick={() => {
@@ -481,11 +667,14 @@ export default function ServicesPage() {
                             setFormData({
                               title: service.title,
                               description: service.description,
-                              icon: service.icon,
+                              icon: service.icon || DEFAULT_SERVICE_ICON,
                               features: service.features.join("\n"),
                               category: service.category,
                               path: service.path,
-                              color: service.color,
+                              color: service.color || "bg-[#0066ff]",
+                              image: service.image || "",
+                              order: service.order ?? 0,
+                              isActive: service.isActive ?? true,
                             });
                             setShowForm(true);
                           }}

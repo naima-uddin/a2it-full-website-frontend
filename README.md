@@ -1,1 +1,2 @@
 mongodb is in the a2it and the server is in the a2it vercel
+and sidebar theke dhoro ami kichu on krlam and then edit krte gelam tkhn hocche same page ei upor er dike on hocche but ami chacchi emn j r ekta route e jbe mane hocche j new open hbe each er jonne

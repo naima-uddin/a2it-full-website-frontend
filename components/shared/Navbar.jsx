@@ -1,23 +1,25 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import {
-  FaShopify,
-  FaEbay,
-  FaAmazon,
-  FaSearch,
-  FaUsers,
-  FaVectorSquare,
-  FaDownload,
-  FaLaptopCode,
-  FaBars,
-  FaTimes,
-} from "react-icons/fa";
-import { FaCartShopping } from "react-icons/fa6";
+import { FaDownload, FaBars, FaTimes } from "react-icons/fa";
 import { IoIosArrowDown } from "react-icons/io";
 import Logo from "./Logo";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { ServiceIcon } from "@/lib/serviceIcons";
+import { fetchPublicServices } from "@/lib/api/services";
+
+// Fallback used if the API is unreachable — keeps the navbar working offline.
+const FALLBACK_SERVICES = [
+  { title: "Design & Development", path: "/services/design-development", icon: "FaLaptopCode" },
+  { title: "E-Commerce", path: "/services/e-commerce", icon: "FaCartShopping" },
+  { title: "Amazon", path: "/services/amazon", icon: "FaAmazon" },
+  { title: "Shopify", path: "/services/shopify", icon: "FaShopify" },
+  { title: "ERP System Development", path: "/services/erp", icon: "FaVectorSquare" },
+  { title: "SEO / SEM / PPC", path: "/services/seo", icon: "FaSearch" },
+  { title: "Server and Hosting Services", path: "/services/server-hosting", icon: "FaUsers" },
+  { title: "E-bay", path: "/services/e-bay", icon: "FaEbay" },
+];
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -56,19 +58,8 @@ const Navbar = () => {
   // Check if any service page is active
   const isServicesActive = () => {
     if (!pathname) return false;
-
-    const servicePaths = [
-      "/services/design-development",
-      "/services/e-commerce",
-      "/services/amazon",
-      "/services/shopify",
-      "/services/erp",
-      "/services/seo",
-      "/services/server-hosting",
-      "/services/e-bay",
-    ];
-
-    return servicePaths.some((path) => pathname.startsWith(path));
+    if (pathname.startsWith("/services")) return true;
+    return services.some((s) => s.path && pathname.startsWith(s.path));
   };
 
   useEffect(() => {
@@ -154,16 +145,27 @@ const Navbar = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const services = [
-    ["Design & Development", "/services/design-development", <FaLaptopCode />],
-    ["E-Commerce", "/services/e-commerce", <FaCartShopping />],
-    ["Amazon", "/services/amazon", <FaAmazon />],
-    ["Shopify", "/services/shopify", <FaShopify />],
-    ["ERP System Development", "/services/erp", <FaVectorSquare />],
-    ["SEO / SEM / PPC", "/services/seo", <FaSearch />],
-    ["Server and Hosting Services", "/services/server-hosting", <FaUsers />],
-    ["E-bay", "/services/e-bay", <FaEbay />],
-  ];
+  const [services, setServices] = useState(FALLBACK_SERVICES);
+
+  // Load services from the dashboard-managed database. If it fails or is
+  // empty, we keep the fallback list so the navbar never breaks.
+  useEffect(() => {
+    let active = true;
+    fetchPublicServices().then((data) => {
+      if (active && data.length > 0) {
+        setServices(
+          data.map((s) => ({
+            title: s.title,
+            path: s.path,
+            icon: s.icon,
+          })),
+        );
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <nav
@@ -216,10 +218,10 @@ const Navbar = () => {
               onMouseLeave={handleMouseLeave}
             >
               <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {services.map(([title, path, icon], idx) => (
+                {services.map(({ title, path, icon }, idx) => (
                   <Link
                     href={path}
-                    key={idx}
+                    key={path || idx}
                     className={`flex items-center gap-3 hover:text-[#006dff] cursor-pointer transition-colors duration-200 ${
                       isActive(path) ? "text-[#006dff] font-bold" : ""
                     }`}
@@ -232,7 +234,7 @@ const Navbar = () => {
                           : "bg-[#0066ff] text-[#fff]"
                       }`}
                     >
-                      {icon}
+                      <ServiceIcon name={icon} />
                     </div>
                     <div className="text-sm leading-tight mt-1">{title}</div>
                   </Link>
@@ -359,10 +361,10 @@ const Navbar = () => {
 
             {servicesOpen && (
               <div className="mt-2 space-y-1">
-                {services.map(([title, path], idx) => (
+                {services.map(({ title, path }, idx) => (
                   <Link
                     href={path}
-                    key={idx}
+                    key={path || idx}
                     className={`block text-sm py-2 hover:text-[#006dff] transition-colors duration-200 ${
                       isActive(path)
                         ? "text-[#006dff] font-bold bg-[#00f0ff]/10 border-l-4 border-[#00f0ff] pl-6"
