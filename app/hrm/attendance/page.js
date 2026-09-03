@@ -899,6 +899,7 @@ export default function AttendancePage() {
   const [importResult, setImportResult] = useState(null);
   const [importStep, setImportStep] = useState("select"); // "select" | "review"
   const [importDays, setImportDays] = useState([]); // full-month preview rows
+  const [importMismatch, setImportMismatch] = useState(null); // {fileMonths:[]} when file is for another month
   const [importSkip, setImportSkip] = useState(() => new Set()); // date strings to skip
   const [showEdit, setShowEdit] = useState(false);
   const [showDel, setShowDel] = useState(false);
@@ -1384,6 +1385,10 @@ export default function AttendancePage() {
       if (r.ok) {
         const days = d.days || [];
         setImportDays(days);
+        // Warn if the file covers a different month than the one selected.
+        setImportMismatch(
+          d.monthMismatch ? { fileMonths: d.fileMonths || [] } : null,
+        );
         // Default: pre-select (skip) any day that already has a record.
         setImportSkip(
           new Set(days.filter((x) => x.existing).map((x) => x.date)),
@@ -1482,6 +1487,7 @@ export default function AttendancePage() {
     setImportResult(null);
     setImportStep("select");
     setImportDays([]);
+    setImportMismatch(null);
     setImportSkip(new Set());
   };
 
@@ -3657,6 +3663,24 @@ export default function AttendancePage() {
           </>
         ) : (
           <>
+            {/* Month mismatch warning — the file covers a different month */}
+            {importMismatch && (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+                <b>No days matched {MONTHS[importMonth - 1]} {importYear}.</b>{" "}
+                This file contains data for{" "}
+                <b>
+                  {(importMismatch.fileMonths || [])
+                    .map((m) => {
+                      const [y, mo] = m.split("-");
+                      return `${MONTHS[parseInt(mo, 10) - 1]} ${y}`;
+                    })
+                    .join(", ")}
+                </b>
+                . Go <b>Back</b> and pick the matching month/year, then Preview
+                again.
+              </div>
+            )}
+
             {/* Summary bar — one clear line */}
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-teal-50 border border-teal-100 px-4 py-3">
               <div className="text-sm text-teal-900">
