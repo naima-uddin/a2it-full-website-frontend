@@ -3,7 +3,25 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { FaCheckCircle, FaArrowRight } from "react-icons/fa";
 import { ServiceIcon } from "@/lib/serviceIcons";
-import { fetchServiceByPath } from "@/lib/api/services";
+import { fetchServiceByPath, fetchPublicServices } from "@/lib/api/services";
+
+// Required for `output: "export"` — enumerate the dashboard-created service
+// slugs at build time so each gets a static HTML page. Falls back to an empty
+// list (only the hand-designed /services/* pages ship) if the API is
+// unreachable during the build, so the export never fails.
+export async function generateStaticParams() {
+  try {
+    const services = await fetchPublicServices();
+    return services
+      .filter((s) => typeof s.path === "string" && s.path.startsWith("/services/"))
+      .map((s) => ({
+        slug: s.path.replace(/^\/services\//, "").replace(/\/$/, ""),
+      }))
+      .filter((p) => p.slug);
+  } catch {
+    return [];
+  }
+}
 
 // Newly added services (created from the dashboard) render through this
 // template. Existing hand-designed routes like /services/amazon take
