@@ -664,6 +664,13 @@ function PayrollDetail({ payroll }) {
     absentDeduction + lateDeduction + leaveDeduction + halfDayDeduction,
     basicPayShown,
   );
+  // Onsite service charge — a fixed deduction the generated payroll applies.
+  // For a saved payroll it is already inside payroll.summary.netPayable, so it
+  // is only re-applied for a genuine preview row (the backend preview exposes
+  // it on payroll.deductions).
+  const serviceChargeDeduction = preferStored
+    ? 0
+    : ded.serviceCharge || ded.otherDeductions || 0;
   const customEarnings = (so.customEarnings || []).filter(
     (i) => (i.label || "") !== "" || Number(i.amount) !== 0,
   );
@@ -695,7 +702,8 @@ function PayrollDetail({ payroll }) {
           basicPayShown -
             totalAttendanceDeductions -
             utilityBill -
-            foodDeduction +
+            foodDeduction -
+            serviceChargeDeduction +
             customEarnTotal -
             customDedTotal,
         );
@@ -1292,6 +1300,24 @@ function PayrollDetail({ payroll }) {
               </div>
               <span className="font-semibold text-purple-700 shrink-0">
                 − BDT {fmt(foodDeduction)}
+              </span>
+            </div>
+          )}
+
+          {/* Onsite service charge (preview rows only — for saved payrolls it
+              is already baked into the stored net) */}
+          {serviceChargeDeduction > 0 && (
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-orange-100">
+              <div>
+                <p className="font-medium text-orange-800 flex items-center gap-1.5">
+                  Service Charge
+                </p>
+                <p className="text-xs text-orange-500 mt-0.5">
+                  Fixed onsite service charge
+                </p>
+              </div>
+              <span className="font-semibold text-orange-700 shrink-0">
+                − BDT {fmt(serviceChargeDeduction)}
               </span>
             </div>
           )}
@@ -2130,7 +2156,25 @@ function AdminView() {
 
   // Merge saved payrolls with live preview rows for employees who don't yet
   // have a saved payroll for this period. Saved records always take priority.
+  //
+  // IMPORTANT: only back-fill preview ("Not generated") rows in the unfiltered
+  // "All" view. When a specific status is selected, `payrolls` is already
+  // narrowed to that status server-side, so an employee whose payroll is in a
+  // DIFFERENT status (e.g. Pending while viewing "Paid") would otherwise be
+  // wrongly re-injected as a preview row and shown with a divergent client-side
+  // estimate. Filtering by "Paid" must show only the Paid payrolls.
   const mergedPayrolls = useMemo(() => {
+    if (statusFilter !== "all") {
+      const nameOfSaved = (p) => {
+        const e = p.employee || {};
+        return `${e.firstName || p.employeeName || ""} ${e.lastName || ""}`
+          .trim()
+          .toLowerCase();
+      };
+      return [...payrolls].sort((a, b) =>
+        nameOfSaved(a).localeCompare(nameOfSaved(b)),
+      );
+    }
     const savedIds = new Set(
       payrolls
         .map((p) => (p.employee?._id || p.employee || p.employeeId)?.toString())
@@ -2150,7 +2194,7 @@ function AdminView() {
     return [...payrolls, ...previewOnly].sort((a, b) =>
       nameOf(a).localeCompare(nameOf(b)),
     );
-  }, [payrolls, previewRows]);
+  }, [payrolls, previewRows, statusFilter]);
 
   const filtered = useMemo(() => {
     if (!search) return mergedPayrolls;
@@ -2232,10 +2276,18 @@ function AdminView() {
         : 0;
     const foodDeduct = liveFoodD || savedFoodD;
 
+    // Onsite service charge — a fixed deduction the generated payroll applies.
+    // The preview backend now exposes it on the row so the estimate matches the
+    // saved total for onsite employees instead of under-showing.
+    const serviceCharge = preferStoredRow
+      ? 0 // already baked into p.summary.totalDeductions for saved rows
+      : ded.serviceCharge || ded.otherDeductions || 0;
+
     const totalDeductCalc =
       Math.min(absDeduct + lateDeduct + lvDeduct + hdDeduct, basicPayShown) +
       utilBill +
-      foodDeduct;
+      foodDeduct +
+      serviceCharge;
     const rowCustEarn = (p.slipOverrides?.customEarnings || []).reduce(
       (s, i) => s + (Number(i.amount) || 0),
       0,
