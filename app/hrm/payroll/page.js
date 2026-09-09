@@ -1616,19 +1616,27 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
     0,
   );
 
-  // Live net preview
+  // Live net preview — MUST mirror the backend save formula
+  // (updatePayroll) exactly, otherwise the net shown while editing won't match
+  // what gets stored. The backend adds the onsite tea allowance to gross and
+  // deducts the utility bill + onsite service charge, so this must too.
+  const onsiteTea = p.onsiteBenefitsDetails?.teaAllowance || 0;
+  const onsiteService = p.onsiteBenefitsDetails?.serviceCharge || 0;
   const gross =
     nOr0(form.basicPay) +
     nOr0(form.overtime) +
     nOr0(form.bonus) +
     nOr0(form.allowance) +
+    onsiteTea +
     customEarnTotal;
   const totalDed =
     nOr0(form.lateDeduction) +
     nOr0(form.absentDeduction) +
     nOr0(form.leaveDeduction) +
     nOr0(form.halfDayDeduction) +
+    nOr0(form.utilityBill) + // fixed utility bill — deducted LAST (backend line ~4292)
     nOr0(form.mealDeduction) +
+    onsiteService +
     customDedTotal;
   const net = Math.max(0, gross - totalDed);
 
