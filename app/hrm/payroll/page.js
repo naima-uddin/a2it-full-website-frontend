@@ -669,16 +669,9 @@ function PayrollDetail({ payroll }) {
     absentDeduction + lateDeduction + leaveDeduction + halfDayDeduction,
     basicPayShown,
   );
-  // Onsite service charge — a fixed deduction the generated payroll applies.
-  // Shown as its own line so the slip's items always add up to the net. For a
-  // SAVED payroll this is DISPLAY-ONLY: the amount is already inside
-  // payroll.summary.netPayable (which drives the net above), so listing it here
-  // does not double-count. For a preview row it IS part of the net formula.
-  const serviceChargeDeduction = preferStored
-    ? payroll.deductions?.serviceCharge ||
-      payroll.onsiteBenefitsDetails?.serviceCharge ||
-      0
-    : ded.serviceCharge || ded.otherDeductions || 0;
+  // Onsite service charge removed — only the utility bill (khala bill) is a
+  // fixed deduction, so there is no service charge line.
+  const serviceChargeDeduction = 0;
   const customEarnings = (so.customEarnings || []).filter(
     (i) => (i.label || "") !== "" || Number(i.amount) !== 0,
   );
@@ -1317,24 +1310,6 @@ function PayrollDetail({ payroll }) {
             </div>
           )}
 
-          {/* Onsite service charge (preview rows only — for saved payrolls it
-              is already baked into the stored net) */}
-          {serviceChargeDeduction > 0 && (
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-orange-100">
-              <div>
-                <p className="font-medium text-orange-800 flex items-center gap-1.5">
-                  Service Charge
-                </p>
-                <p className="text-xs text-orange-500 mt-0.5">
-                  Fixed onsite service charge
-                </p>
-              </div>
-              <span className="font-semibold text-orange-700 shrink-0">
-                − BDT {fmt(serviceChargeDeduction)}
-              </span>
-            </div>
-          )}
-
           {/* Custom earnings / deductions added by admin */}
           {(customEarnings.length > 0 || customDeductions.length > 0) && (
             <div className="px-4 pt-3 pb-4 space-y-2 border-b border-gray-200">
@@ -1659,12 +1634,11 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
     0,
   );
 
-  // Live net preview — MUST mirror the backend save formula
-  // (updatePayroll) exactly, otherwise the net shown while editing won't match
-  // what gets stored. The backend adds the onsite tea allowance to gross and
-  // deducts the utility bill + onsite service charge, so this must too.
+  // Live net preview — MUST mirror the backend save formula (updatePayroll)
+  // exactly, otherwise the net shown while editing won't match what gets stored.
+  // The backend adds the onsite tea allowance to gross and deducts the utility
+  // bill (khala bill). Onsite service charge is NOT deducted.
   const onsiteTea = p.onsiteBenefitsDetails?.teaAllowance || 0;
-  const onsiteService = p.onsiteBenefitsDetails?.serviceCharge || 0;
   const gross =
     nOr0(form.basicPay) +
     nOr0(form.overtime) +
@@ -1677,9 +1651,8 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
     nOr0(form.absentDeduction) +
     nOr0(form.leaveDeduction) +
     nOr0(form.halfDayDeduction) +
-    nOr0(form.utilityBill) + // fixed utility bill — deducted LAST (backend line ~4292)
+    nOr0(form.utilityBill) + // khala bill — the only fixed deduction
     nOr0(form.mealDeduction) +
-    onsiteService +
     customDedTotal;
   const net = Math.max(0, gross - totalDed);
 
@@ -2344,18 +2317,12 @@ function AdminView() {
     const foodDeduct =
       p.metadata?.isEdited === true ? savedFoodD : liveFoodD || savedFoodD;
 
-    // Onsite service charge — a fixed deduction the generated payroll applies.
-    // The preview backend now exposes it on the row so the estimate matches the
-    // saved total for onsite employees instead of under-showing.
-    const serviceCharge = preferStoredRow
-      ? 0 // already baked into p.summary.totalDeductions for saved rows
-      : ded.serviceCharge || ded.otherDeductions || 0;
-
+    // Onsite service charge removed — only the utility bill (khala bill) is a
+    // fixed deduction.
     const totalDeductCalc =
       Math.min(absDeduct + lateDeduct + lvDeduct + hdDeduct, basicPayShown) +
       utilBill +
-      foodDeduct +
-      serviceCharge;
+      foodDeduct;
     const rowCustEarn = (p.slipOverrides?.customEarnings || []).reduce(
       (s, i) => s + (Number(i.amount) || 0),
       0,
