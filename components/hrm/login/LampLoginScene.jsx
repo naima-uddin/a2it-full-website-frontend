@@ -222,15 +222,22 @@ export default function LampLoginScene(formProps) {
           width: 100%;
           max-width: 1100px;
           align-items: center;
-          gap: 2rem;
+          justify-content: center;
+          gap: 0;
         }
+        /* Lamp sits dead-centre while OFF, then glides left when the lamp is
+           lit to make room for the form on the right. */
         .lamp-section {
-          flex: 1;
+          flex: 0 0 auto;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
           position: relative;
+          transition: transform 0.75s cubic-bezier(0.22, 1, 0.3, 1);
+        }
+        .stage.lit .lamp-section {
+          transform: translateX(-210px);
         }
         .lamp-svg {
           width: 100%;
@@ -296,25 +303,31 @@ export default function LampLoginScene(formProps) {
           transition: background 0.6s ease;
           pointer-events: none;
         }
-        /* Form is hidden while the lamp is OFF and fades/rises into view once
-           it's switched ON. */
+        /* Form is hidden while the lamp is OFF. Once lit it rises up from below
+           on the right-hand side and fades in. Absolutely placed so the lamp
+           can stay perfectly centred underneath it while OFF. */
         .login-section {
-          flex: 1;
+          position: absolute;
+          z-index: 2;
+          top: 50%;
+          left: 54%;
+          width: min(420px, 42%);
           display: flex;
           justify-content: center;
-          align-items: center;
           opacity: 0;
-          transform: translateY(24px) scale(0.97);
+          transform: translateY(calc(-50% + 120px)) scale(0.94);
+          filter: blur(6px);
           visibility: hidden;
-          transition: opacity 0.6s ease 0.15s, transform 0.6s cubic-bezier(0.22, 1.1, 0.28, 1) 0.15s,
-            visibility 0s linear 0.75s;
+          transition: opacity 0.55s ease 0.45s, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s,
+            filter 0.55s ease 0.45s, visibility 0s linear 1.2s;
         }
         .login-section.show {
           opacity: 1;
-          transform: translateY(0) scale(1);
+          transform: translateY(-50%) scale(1);
+          filter: blur(0);
           visibility: visible;
-          transition: opacity 0.6s ease 0.15s, transform 0.6s cubic-bezier(0.22, 1.1, 0.28, 1) 0.15s,
-            visibility 0s linear 0s;
+          transition: opacity 0.55s ease 0.5s, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s,
+            filter 0.55s ease 0.5s, visibility 0s linear 0s;
         }
         /* Light card (same surface as the original scene) so the shared
            <LoginForm> stays readable, but its border/glow re-themes with the
@@ -335,13 +348,31 @@ export default function LampLoginScene(formProps) {
           overflow: visible;
         }
 
+        /* On narrower screens there isn't room to slide sideways, so stack:
+           lamp centred on top, form flows in below (still rising from the
+           bottom). Absolute positioning and the sideways slide are undone. */
         @media (max-width: 860px) {
           .container {
             flex-direction: column;
+            justify-content: center;
             gap: 1.5rem;
+          }
+          .stage.lit .lamp-section {
+            transform: none;
           }
           .lamp-svg {
             max-width: 240px;
+          }
+          .login-section {
+            position: static;
+            top: auto;
+            left: auto;
+            width: 100%;
+            max-width: 400px;
+            transform: translateY(80px) scale(0.94);
+          }
+          .login-section.show {
+            transform: translateY(0) scale(1);
           }
         }
         @media (max-width: 560px) {
