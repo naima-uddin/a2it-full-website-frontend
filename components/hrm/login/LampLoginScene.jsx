@@ -110,7 +110,7 @@ export default function LampLoginScene(formProps) {
   };
 
   return (
-    <div className="stage" style={cssVars}>
+    <div className={`stage ${lit ? "lit" : ""}`} style={cssVars}>
       <div className="container">
         <div className="lamp-section">
           <div className="lamp-ambient-glow" />
@@ -173,10 +173,10 @@ export default function LampLoginScene(formProps) {
               </g>
             </g>
           </svg>
-          <p className="lamp-hint">Pull the string 💡</p>
+          <p className="lamp-hint">{lit ? "Welcome — please sign in" : "Pull the string 💡"}</p>
         </div>
 
-        <div className="login-section">
+        <div className={`login-section ${lit ? "show" : ""}`} aria-hidden={!lit}>
           <div className="card">
             <LoginForm fieldsVisible reducedMotion={reducedMotion} {...formProps} />
           </div>
@@ -186,6 +186,7 @@ export default function LampLoginScene(formProps) {
       <style jsx>{`
         .stage {
           --bg-color: #0b0f14;
+          position: relative;
           min-height: 100vh;
           width: 100%;
           background-color: var(--bg-color);
@@ -195,7 +196,28 @@ export default function LampLoginScene(formProps) {
           overflow-x: hidden;
           padding: 40px 24px;
         }
+        /* When the lamp is lit, wash the dark screen with a soft glow tinted to
+           the current theme colour. */
+        .stage::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            1200px 800px at 30% 40%,
+            rgba(var(--theme-glow-rgb), 0.22) 0%,
+            transparent 65%
+          );
+          opacity: 0;
+          transition: opacity 0.7s ease;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .stage.lit::before {
+          opacity: 1;
+        }
         .container {
+          position: relative;
+          z-index: 1;
           display: flex;
           width: 100%;
           max-width: 1100px;
@@ -274,11 +296,25 @@ export default function LampLoginScene(formProps) {
           transition: background 0.6s ease;
           pointer-events: none;
         }
+        /* Form is hidden while the lamp is OFF and fades/rises into view once
+           it's switched ON. */
         .login-section {
           flex: 1;
           display: flex;
           justify-content: center;
           align-items: center;
+          opacity: 0;
+          transform: translateY(24px) scale(0.97);
+          visibility: hidden;
+          transition: opacity 0.6s ease 0.15s, transform 0.6s cubic-bezier(0.22, 1.1, 0.28, 1) 0.15s,
+            visibility 0s linear 0.75s;
+        }
+        .login-section.show {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          visibility: visible;
+          transition: opacity 0.6s ease 0.15s, transform 0.6s cubic-bezier(0.22, 1.1, 0.28, 1) 0.15s,
+            visibility 0s linear 0s;
         }
         /* Light card (same surface as the original scene) so the shared
            <LoginForm> stays readable, but its border/glow re-themes with the
