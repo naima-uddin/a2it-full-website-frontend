@@ -466,7 +466,12 @@ function PayrollDetail({ payroll }) {
     hasMealSub === true && (liveMeal?.perPersonCost || 0) > 0
       ? liveMeal.perPersonCost
       : 0;
-  const foodDeduction = liveFoodDeduction || savedFoodDeduction;
+  // Manually-edited payroll: show the meal amount the admin locked in (stored),
+  // not the live food cost — so the displayed line matches the stored net.
+  const foodDeduction =
+    payroll.metadata?.isEdited === true
+      ? savedFoodDeduction
+      : liveFoodDeduction || savedFoodDeduction;
 
   const mealCalcNote =
     liveMeal && liveMeal.totalFoodCost > 0
@@ -665,11 +670,14 @@ function PayrollDetail({ payroll }) {
     basicPayShown,
   );
   // Onsite service charge — a fixed deduction the generated payroll applies.
-  // For a saved payroll it is already inside payroll.summary.netPayable, so it
-  // is only re-applied for a genuine preview row (the backend preview exposes
-  // it on payroll.deductions).
+  // Shown as its own line so the slip's items always add up to the net. For a
+  // SAVED payroll this is DISPLAY-ONLY: the amount is already inside
+  // payroll.summary.netPayable (which drives the net above), so listing it here
+  // does not double-count. For a preview row it IS part of the net formula.
   const serviceChargeDeduction = preferStored
-    ? 0
+    ? payroll.deductions?.serviceCharge ||
+      payroll.onsiteBenefitsDetails?.serviceCharge ||
+      0
     : ded.serviceCharge || ded.otherDeductions || 0;
   const customEarnings = (so.customEarnings || []).filter(
     (i) => (i.label || "") !== "" || Number(i.amount) !== 0,
@@ -693,7 +701,12 @@ function PayrollDetail({ payroll }) {
   // meal deduction shown above is a live figure (food cost can be added after
   // the payroll was generated/saved), so any amount beyond what was already
   // baked into the stored value at save time must still be subtracted here.
-  const liveFoodDeductionExtra = Math.max(0, foodDeduction - savedFoodDeduction);
+  // A manually-edited payroll is authoritative — trust its stored net as-is
+  // (the admin locked in the meal amount; don't re-layer live food cost).
+  const liveFoodDeductionExtra =
+    payroll.metadata?.isEdited === true
+      ? 0
+      : Math.max(0, foodDeduction - savedFoodDeduction);
   const netPayable =
     preferStored && payroll.summary?.netPayable != null
       ? Math.max(0, payroll.summary.netPayable - liveFoodDeductionExtra)
@@ -2327,7 +2340,9 @@ function AdminView() {
       activeSubIds.has(rowEmpId) && (liveMealSummary?.perPersonCost || 0) > 0
         ? liveMealSummary.perPersonCost
         : 0;
-    const foodDeduct = liveFoodD || savedFoodD;
+    // Manually-edited payroll: trust the stored meal amount, not live food cost.
+    const foodDeduct =
+      p.metadata?.isEdited === true ? savedFoodD : liveFoodD || savedFoodD;
 
     // Onsite service charge — a fixed deduction the generated payroll applies.
     // The preview backend now exposes it on the row so the estimate matches the
@@ -2358,7 +2373,12 @@ function AdminView() {
     // the meal deduction, which is a live figure (food cost can be added
     // after the payroll was generated/saved), so any amount beyond what was
     // already baked into the stored totals at save time must still be added.
-    const liveFoodDExtra = Math.max(0, foodDeduct - savedFoodD);
+    // A MANUALLY-EDITED payroll is authoritative: the admin locked in the exact
+    // meal amount, so do NOT re-layer live food cost on top of its stored net.
+    const isManuallyEdited = p.metadata?.isEdited === true;
+    const liveFoodDExtra = isManuallyEdited
+      ? 0
+      : Math.max(0, foodDeduct - savedFoodD);
     const basic = preferStoredRow
       ? (p.earnings?.basicPay ?? basicPayShown)
       : basicPayShown;

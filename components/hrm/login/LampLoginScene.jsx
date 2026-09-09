@@ -234,10 +234,13 @@ export default function LampLoginScene(formProps) {
           justify-content: center;
           align-items: center;
           position: relative;
-          transition: transform 0.75s cubic-bezier(0.22, 1, 0.3, 1);
+          /* Returning to centre (OFF): wait for the form to clear first. */
+          transition: transform 0.7s cubic-bezier(0.22, 1, 0.3, 1) 0.35s;
         }
         .stage.lit .lamp-section {
           transform: translateX(-210px);
+          /* Sliding left (ON): move immediately, then the form follows. */
+          transition: transform 0.7s cubic-bezier(0.22, 1, 0.3, 1) 0s;
         }
         .lamp-svg {
           width: 100%;
@@ -315,19 +318,19 @@ export default function LampLoginScene(formProps) {
           display: flex;
           justify-content: center;
           opacity: 0;
-          transform: translateY(calc(-50% + 120px)) scale(0.94);
-          filter: blur(6px);
+          transform: translateY(calc(-50% + 90px)) scale(0.96);
           visibility: hidden;
-          transition: opacity 0.55s ease 0.45s, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s,
-            filter 0.55s ease 0.45s, visibility 0s linear 1.2s;
+          /* OFF: exit quickly and right away (no delay) so the form is gone
+             before the lamp glides back to centre. */
+          transition: opacity 0.3s ease 0s, transform 0.35s ease 0s, visibility 0s linear 0.35s;
         }
         .login-section.show {
           opacity: 1;
           transform: translateY(-50%) scale(1);
-          filter: blur(0);
           visibility: visible;
-          transition: opacity 0.55s ease 0.5s, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s,
-            filter 0.55s ease 0.5s, visibility 0s linear 0s;
+          /* ON: wait for the lamp to slide left, then rise up and fade in. */
+          transition: opacity 0.55s ease 0.4s, transform 0.75s cubic-bezier(0.18, 1, 0.3, 1) 0.4s,
+            visibility 0s linear 0s;
         }
         /* Light card (same surface as the original scene) so the shared
            <LoginForm> stays readable, but its border/glow re-themes with the
