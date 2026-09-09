@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import api from "../lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import LoginScene from "@/components/hrm/login/LoginScene";
+// Old Rive "Teddy" animation — kept intact as a backup, swap back anytime:
+// import LoginScene from "@/components/hrm/login/LoginScene";
+import LampLoginScene from "@/components/hrm/login/LampLoginScene";
 
 const page = () => {
   const router = useRouter();
@@ -237,7 +239,7 @@ const page = () => {
   };
 
   return (
-    <LoginScene
+    <LampLoginScene
       email={email}
       setEmail={setEmail}
       password={password}

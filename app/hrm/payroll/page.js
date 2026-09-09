@@ -1774,6 +1774,12 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
         method: "PUT",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
+          // This is an explicit MANUAL override — the admin has already seen the
+          // exact resulting net in the modal. Do NOT let the backend re-derive
+          // attendance from live records (recalculate:true would silently revert
+          // the edited counts). The row's "Recalculate" button is the separate
+          // re-sync-from-attendance action.
+          recalculate: false,
           monthlySalary: nOr0(form.monthlySalary),
           basicPay: nOr0(form.basicPay),
           status: form.status,
@@ -2441,6 +2447,11 @@ function AdminView() {
       p.employeeAccepted?.accepted
     )
       return;
+    // A manually-edited payroll is an intentional override — do NOT silently
+    // re-sync it from live attendance on view, or the admin's edits vanish the
+    // moment they open the slip. Use the row's Recalculate button to pull live
+    // data in when that is actually wanted.
+    if (p.metadata?.isEdited === true) return;
     try {
       const res = await fetch(`${API}/payroll/${p._id}/recalculate`, {
         method: "POST",
