@@ -1594,6 +1594,36 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
   const nOr0 = (v) =>
     v === "" || v === null || isNaN(Number(v)) ? 0 : Number(v);
 
+  // Re-derive the attendance-driven deduction amounts from the current day
+  // counts, using the SAME daily-rate formula as the backend
+  // (calculatePayroll): dailyRate = ceil(monthlySalary / workingDays); absent =
+  // absentDays × rate; late = floor(lateDays / 3) × rate; leave = leaveDays ×
+  // rate; halfDay = floor(halfDays × rate / 2). Basic pay stays the full monthly
+  // salary — absences are taken out via these deductions, exactly as on the slip.
+  const deriveDeductions = (f) => {
+    const wd = nOr0(f.totalWorkingDays) || 1;
+    const dr = ceilAmount(nOr0(f.monthlySalary) / wd);
+    return {
+      absentDeduction: nOr0(f.absentDays) * dr,
+      lateDeduction: Math.floor(nOr0(f.lateDays) / 3) * dr,
+      leaveDeduction: nOr0(f.leaveDays) * dr,
+      halfDayDeduction: Math.floor((nOr0(f.halfDays) * dr) / 2),
+    };
+  };
+
+  // Setter for any field that feeds the deduction formula (day counts, salary,
+  // working days). Updating it immediately recomputes the deduction amounts and
+  // the live net below — so editing "Absent 2 → 1" instantly reflects in pay.
+  const setAtt = (k) => (ev) =>
+    setForm((f) => {
+      const next = { ...f, [k]: ev.target.value };
+      // Full-month model: basic pay tracks the monthly salary. Keep them in
+      // sync when the salary itself is edited (absences come out via the
+      // deductions, not by lowering basic pay).
+      if (k === "monthlySalary") next.basicPay = ev.target.value;
+      return { ...next, ...deriveDeductions(next) };
+    });
+
   const setLabel = (k) => (ev) =>
     setLabels((l) => ({ ...l, [k]: ev.target.value }));
 
@@ -1640,13 +1670,20 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
     customDedTotal;
   const net = Math.max(0, gross - totalDed);
 
-  // inline field helpers (functions, NOT components — avoids input focus loss)
-  const numField = (label, k) => (
+  // inline field helpers (functions, NOT components — avoids input focus loss).
+  // Pass a custom onChange (e.g. setAtt) for fields that should re-derive the
+  // deduction amounts as they change.
+  const numField = (label, k, onChange = set) => (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">
         {label}
       </label>
-      <input type="number" className={INP} value={form[k]} onChange={set(k)} />
+      <input
+        type="number"
+        className={INP}
+        value={form[k]}
+        onChange={onChange(k)}
+      />
     </div>
   );
   const txtField = (label, k, placeholder = "") => (
@@ -1870,7 +1907,7 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
                   Salary Basis
                 </p>
                 <div className="grid grid-cols-3 gap-3">
-                  {numField("Monthly Salary", "monthlySalary")}
+                  {numField("Monthly Salary", "monthlySalary", setAtt)}
                   {numField("Utility Bill (fixed)", "utilityBill")}
                   {numField("Basic Pay (earned)", "basicPay")}
                 </div>
@@ -1924,17 +1961,19 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
                 Attendance
               </p>
               <div className="grid grid-cols-3 gap-3">
-                {numField("Working Days", "totalWorkingDays")}
-                {numField("Present", "presentDays")}
-                {numField("Absent", "absentDays")}
-                {numField("Late", "lateDays")}
-                {numField("Leave", "leaveDays")}
-                {numField("Half Days", "halfDays")}
+                {numField("Working Days", "totalWorkingDays", setAtt)}
+                {numField("Present", "presentDays", setAtt)}
+                {numField("Absent", "absentDays", setAtt)}
+                {numField("Late", "lateDays", setAtt)}
+                {numField("Leave", "leaveDays", setAtt)}
+                {numField("Half Days", "halfDays", setAtt)}
               </div>
               <p className="text-[11px] text-gray-400 mt-3">
-                These counts are manual overrides — they do not recalculate the
-                deductions automatically. Use the Recalculate button on the row
-                to re-sync from attendance records.
+                Editing a count instantly recomputes the deduction amounts and
+                the net below (daily rate = monthly salary ÷ working days). You
+                can still fine-tune any amount manually in the Deductions tab, or
+                use the Recalculate button on the row to re-sync from attendance
+                records.
               </p>
             </div>
           )}
