@@ -1944,10 +1944,12 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
                 <p className="text-xs font-bold text-[#113F67] uppercase tracking-wide mb-2">
                   Salary Basis
                 </p>
-                <div className="grid grid-cols-3 gap-3">
+                {/* Basic pay is derived (full salary ÷ working days) and drives
+                    the net behind the scenes via form.basicPay — it is not shown
+                    or edited here. */}
+                <div className="grid grid-cols-2 gap-3">
                   {numField("Monthly Salary", "monthlySalary", setAtt)}
                   {numField("Utility Bill (fixed)", "utilityBill")}
-                  {numField("Basic Pay (earned)", "basicPay")}
                 </div>
               </div>
               <div>
