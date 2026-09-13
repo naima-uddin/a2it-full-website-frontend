@@ -557,6 +557,12 @@ export default function sidebar() {
       roles: ["admin"],
       badge: notificationCount > 0 ? notificationCount : null,
     },
+    {
+      name: "Settings",
+      icon: <Settings size={20} />,
+      path: "/hrm/settings",
+      roles: ["admin"],
+    },
   ];
 
   // Cost Details Submenus (Only for Admin and Moderator)
