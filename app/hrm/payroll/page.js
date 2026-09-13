@@ -1193,25 +1193,23 @@ function PayrollDetail({ payroll }) {
           <div className="flex items-center justify-between px-4 py-3.5  border-b border-blue-100">
             <div>
               <p className="font-bold text-blue-800">
-                {isPartialMonth ? "Basic Pay (so far)" : "Basic Pay"}
+                {isPartialMonth ? "Per Day Count" : "Basic Pay"}
               </p>
               <p className="text-xs text-blue-500 mt-0.5">
-                {isPartialMonth ? (
-                  <>
-                    BDT {fmt(dailyRate)}/day × {presentDays + absentDaysCalc}{" "}
-                    elapsed day(s) = BDT {fmt(basicPayShown)}
-                  </>
-                ) : (
-                  <>
-                    Daily rate: BDT {fmt(sd.monthlySalary)} ÷ {workDays}{" "}
-                    working days = BDT {fmt(dailyRate)}
-                  </>
-                )}
+                {/* Per-day rate only: total salary ÷ working days = per day */}
+                <>
+                  BDT {fmt(sd.monthlySalary)} ÷ {workDays} working days = BDT{" "}
+                  {fmt(dailyRate)}/day
+                </>
               </p>
             </div>
-            <p className="font-bold text-blue-800 text-lg">
-              BDT {fmt(basicPayShown)}
-            </p>
+            {/* For a partial month this row just shows the per-day rate, so no
+                amount is displayed on the right. */}
+            {!isPartialMonth && (
+              <p className="font-bold text-blue-800 text-lg">
+                BDT {fmt(basicPayShown)}
+              </p>
+            )}
           </div>
 
           {/* Step 3: Attendance Deductions */}
