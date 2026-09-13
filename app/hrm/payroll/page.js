@@ -602,6 +602,13 @@ function PayrollDetail({ payroll }) {
   const lateDaysCalc = liveAtt ? liveAtt.late : att.lateDays || 0;
   const leaveDaysCalc = liveAtt ? liveAtt.unpaidLeave : att.leaveDays || 0;
   const halfDaysCalc = liveAtt ? liveAtt.half : att.halfDays || 0;
+  // Absent-day count — stored for saved payrolls, live for preview rows.
+  const absentDaysCalc =
+    preferStored && att.absentDays != null
+      ? att.absentDays
+      : liveAtt
+        ? liveAtt.absent
+        : att.absentDays || 0;
 
   // Full-month working days (divisor) — stored value is authoritative; fall
   // back to the live count.
@@ -636,20 +643,38 @@ function PayrollDetail({ payroll }) {
     payroll.month === _now.getMonth() + 1 &&
     _now < _monthEnd;
 
-  // Basic pay: trust the stored value for any saved payroll; live estimate
+  // Net basic pay: stored value for a saved payroll; live estimate
   // (earned-so-far for a partial month, else full monthly salary) otherwise.
-  const basicPayShown =
+  // For a partial month this is the NET figure (absences already excluded); it
+  // is grossed back up for display just below so the absent days show as an
+  // explicit deduction line instead of being silently folded in.
+  const netBasicPay =
     preferStored && payroll.earnings?.basicPay != null
-      ? payroll.earnings.basicPay
+      ? isPartialMonth
+        ? // Un-gross: a partial-month payroll may store basic pay either as the
+          // net earned-so-far (backend generation, absent deduction 0) or as
+          // the grossed-up figure (after an edit that itemised the absent
+          // deduction). Subtracting the stored absent deduction recovers the
+          // net earned-so-far in both cases, so re-grossing below never double
+          // counts.
+          payroll.earnings.basicPay - (ded.absentDeduction || 0)
+        : payroll.earnings.basicPay
       : isPartialMonth
         ? earnedPay
         : sd.monthlySalary || 0;
-  // For a partial month PREVIEW, absent/leave/half-day are already excluded
-  // by paying only for present days, so those live deductions are 0.
-  const absentDeduction = preferStored
-    ? ded.absentDeduction || 0
-    : isPartialMonth
-      ? 0
+  // Absent deduction:
+  //  - Completed month: stored amount (saved) or monthlySalary − earnedPay (live).
+  //  - Partial (in-progress) month: the backend folds absences into basic pay
+  //    and stores the deduction as 0. For DISPLAY we present the full-month
+  //    shape — absent days × daily rate as an explicit line — so the slip isn't
+  //    misleadingly "0" next to a non-zero absent count and matches the Edit
+  //    modal. Purely presentational: basic pay is shown grossed up by exactly
+  //    this amount (see basicPayShown), so it nets straight back to earned-so-
+  //    far and netPayable (taken from the stored value below) never changes.
+  const absentDeduction = isPartialMonth
+    ? absentDaysCalc * dailyRate
+    : preferStored
+      ? ded.absentDeduction || 0
       : (sd.monthlySalary || 0) - earnedPay;
   const lateDeduction = preferStored
     ? ded.lateDeduction || 0
@@ -664,6 +689,13 @@ function PayrollDetail({ payroll }) {
     : isPartialMonth
       ? 0
       : Math.floor((halfDaysCalc * dailyRate) / 2);
+
+  // For a partial month, show basic pay GROSS (earned-so-far + the absent
+  // deduction above) so the deduction nets straight back to earned-so-far and
+  // net payable is unchanged. Completed month / full salary uses netBasicPay.
+  const basicPayShown = isPartialMonth
+    ? netBasicPay + absentDeduction
+    : netBasicPay;
 
   const totalAttendanceDeductions = Math.min(
     absentDeduction + lateDeduction + leaveDeduction + halfDayDeduction,
@@ -1161,15 +1193,13 @@ function PayrollDetail({ payroll }) {
           <div className="flex items-center justify-between px-4 py-3.5  border-b border-blue-100">
             <div>
               <p className="font-bold text-blue-800">
-                {isPartialMonth
-                  ? "Earned so far (as of today)"
-                  : "Basic Pay"}
+                {isPartialMonth ? "Basic Pay (so far)" : "Basic Pay"}
               </p>
               <p className="text-xs text-blue-500 mt-0.5">
                 {isPartialMonth ? (
                   <>
-                    BDT {fmt(sd.monthlySalary)} ÷ {workDays} working days ×{" "}
-                    {presentDays} present day(s) = BDT {fmt(basicPayShown)}
+                    BDT {fmt(dailyRate)}/day × {presentDays + absentDaysCalc}{" "}
+                    elapsed day(s) = BDT {fmt(basicPayShown)}
                   </>
                 ) : (
                   <>
@@ -1199,9 +1229,7 @@ function PayrollDetail({ payroll }) {
                   <div>
                     <p className="font-medium text-gray-800">Absent</p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {presentDays}/{workDays} days present → earned BDT{" "}
-                      {fmt(earnedPay)} → deduction BDT {fmt(sd.monthlySalary)} −
-                      BDT {fmt(earnedPay)}
+                      {absentDaysCalc} absent day(s) × BDT {fmt(dailyRate)}
                     </p>
                   </div>
                   <span className="font-semibold text-red-600 shrink-0">
@@ -1522,6 +1550,26 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
   const computedDesig = p.employee?.designation || p.designation || "";
   const computedPeriod = `${MONTHS[(p.month || 1) - 1]} ${p.year || ""}`.trim();
 
+  // A partial (in-progress) month payroll is stored with basic pay = earned-so-
+  // far and its attendance deductions = 0 (absences folded into basic pay). For
+  // the editor we present the same money in the full-month shape — basic pay
+  // shown grossed up and the absent days as an explicit deduction — so the
+  // fields match the slip and aren't misleadingly 0. Net is unchanged: the
+  // basic pay gains exactly what the absent deduction subtracts.
+  const _now = new Date();
+  const _monthEnd = new Date(p.year, p.month, 0);
+  const _isPartialMonth =
+    p.year === _now.getFullYear() &&
+    p.month === _now.getMonth() + 1 &&
+    _now < _monthEnd;
+  const _dailyRate = ceilAmount((sd.monthlySalary ?? 0) / ((a.totalWorkingDays ?? 0) || 1));
+  const _partialAbsentDed = _isPartialMonth ? (a.absentDays ?? 0) * _dailyRate : 0;
+  // Un-gross the stored basic pay first (subtract any already-itemised absent
+  // deduction) so re-editing an already-converted payroll doesn't double count.
+  const _netBasicPay = (e.basicPay ?? 0) - (_isPartialMonth ? (d.absentDeduction ?? 0) : 0);
+  const _initBasicPay = _netBasicPay + _partialAbsentDed;
+  const _initAbsentDed = _isPartialMonth ? _partialAbsentDed : (d.absentDeduction ?? 0);
+
   const [form, setForm] = useState({
     // Text / identity (slip overrides)
     companyName: so.companyName ?? "A2IT Limited",
@@ -1534,7 +1582,7 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
     // Salary basis
     monthlySalary: sd.monthlySalary ?? 0,
     utilityBill: sd.utilityBillDeduction ?? 500,
-    basicPay: e.basicPay ?? 0,
+    basicPay: _initBasicPay,
     status: p.status || "Pending",
     notes: p.notes || "",
     totalWorkingDays: a.totalWorkingDays ?? 0,
@@ -1548,7 +1596,7 @@ function EditPayrollModal({ payroll, onClose, onSaved, initialMealDeduction }) {
     bonus: e.bonus?.amount ?? 0,
     allowance: e.allowance?.amount ?? 0,
     lateDeduction: d.lateDeduction ?? 0,
-    absentDeduction: d.absentDeduction ?? 0,
+    absentDeduction: _initAbsentDed,
     leaveDeduction: d.leaveDeduction ?? 0,
     halfDayDeduction: d.halfDayDeduction ?? 0,
     // Prefer the meal deduction the list/cards actually show (live-or-saved,
