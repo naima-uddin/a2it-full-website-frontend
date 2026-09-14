@@ -9,11 +9,45 @@ import {
   Share2,
 } from "lucide-react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
 export default function CompanyGallery() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const sliderRef = useRef(null);
-  const [isMobile, setIsMobile] = useState(false); 
+  const [isMobile, setIsMobile] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState([]);
+
+  // Pull admin-managed gallery images (uploaded from the dashboard) so they
+  // appear here alongside the built-in showcase images.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/upload/gallery`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!active) return;
+        const mapped = (data.resources || []).map((r, i) => ({
+          id: `uploaded-${r.public_id}`,
+          src: r.secure_url,
+          alt: "A2it Company Gallery",
+          title: "A2it Gallery",
+          description:
+            "A moment from A2IT Ltd — our team, workspace and culture.",
+          category: "Gallery",
+          rowSpan: 1,
+          colSpan: i % 5 === 3 ? 2 : 1,
+        }));
+        setUploadedImages(mapped);
+      } catch (err) {
+        console.error("Failed to load gallery images:", err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -39,143 +73,8 @@ export default function CompanyGallery() {
     return () => clearInterval(interval);
   }, [isMobile, currentSlide]);
 
-  // IT Company showcase images
-  const companyImages = [
-    {
-      id: 1,
-      src: "/assets/gallery/gallery7.jpg",
-      alt: "A2it Office",
-      title: "A2it Office",
-      description:
-        "A2it Office is a modern, innovative, and collaborative work environment where skilled professionals in web development, digital marketing, design, and IT services work together.",
-      category: "A2it",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 2,
-      src: "/assets/gallery/gallery8.jpg",
-      alt: "A2it Office",
-      title: "A2it Office",
-      description:
-        "At A2IT Office, we focus on understanding our clients' needs and delivering customized IT solutions that help their businesses grow with confidence.",
-      category: "A2it",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 3,
-      src: "/assets/gallery/gallery3.jpg",
-      alt: "A2it Office",
-      title: "A2it Office",
-      description: "A2IT Office is a forward-thinking IT agency specializing in web development, software solutions, and digital innovation. We help brands grow through smart technology.",
-      category: "A2it",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 4,
-      src: "/assets/gallery/gallery9.jpg",
-      alt: "A2it Office",
-      title: "A2it Office",
-      description: "A2IT Office is a modern and professional IT solutions company delivering high-quality web development, software solutions, and digital services. Our experienced team is committed to timely delivery, innovation, and complete client satisfaction.",
-      category: "A2it",
-      rowSpan: 1,
-      colSpan: 2,
-      featured: true,
-    },
-    {
-      id: 5,
-      src: "/assets/gallery/gallery5.jpg",
-      alt: "A2it Office",
-      title: "A2it Office",
-      description: "A2IT Office is a trusted IT service provider offering reliable and modern digital solutions.",
-      category: "A2it",
-      rowSpan: 1,
-      colSpan: 2,
-      featured: true,
-    },
-    {
-      id: 6,
-      src: "/assets/gallery/gallary6.jpg",
-      alt: "Team Collaboration",
-      title: "Our Development Team",
-      description: "Collaborative workspace where innovation meets expertise",
-      category: "Team",
-      rowSpan: 1,
-      colSpan: 2,
-    },
-    {
-      id: 7,
-      src: "/assets/gallery/gallery1.jpg",
-      alt: "Mobile App Design",
-      title: "Our Team",
-      description: "A dedicated team of skilled professionals working together to deliver quality, innovation, and exceptional results.",
-      category: "Team",
-      rowSpan: 1,
-      colSpan: 2,
-    },
-    {
-      id: 8,
-      src: "/assets/gallery/gallery2.jpg",
-      alt: "Client Consultation",
-      title: "Client Consultation",
-      description: "Working closely with clients to deliver solutions",
-      category: "Consulting",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 9,
-      src: "/assets/gallery/gallary4.jpg",
-      alt: "UI/UX Design",
-      title: "Our Team",
-      description: "A dedicated team of skilled professionals working together to deliver quality, innovation, and exceptional results.",
-      category: "Team",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 10,
-      src: "/assets/gallery/gallery10.jpeg",
-      alt: "Cloud Services",
-      title: "Team",
-      description: "A dedicated team of skilled professionals working together to deliver quality, innovation, and exceptional results.",
-      category: "Team",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 11,
-      src: "/assets/gallery/newYear.jpeg",
-      alt: "New Year Celebration",
-      title: "Team",
-      description: "A dedicated team of skilled professionals working together to deliver quality, innovation, and exceptional results.",
-      category: "Team",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 12,
-      src: "/assets/gallery/newYear2.jpeg",
-      alt: "Cloud Services",
-      title: "A2it",
-      description: "A2IT Office is a trusted IT service provider offering reliable and modern digital solutions.",
-      category: "A2it",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-    {
-      id: 13,
-      src: "/assets/gallery/newYear3.jpeg",
-      alt: "Cloud Services",
-      title: "Team",
-      description: "A dedicated team of skilled professionals working together to deliver quality, innovation, and exceptional results.",
-      category: "Team",
-      rowSpan: 1,
-      colSpan: 1,
-    },
-  ];
+  // Only the images uploaded from the dashboard Company Gallery are shown here.
+  const companyImages = uploadedImages;
 
   // Calculate total slides for mobile
   const totalSlides = companyImages.length;
@@ -293,6 +192,9 @@ export default function CompanyGallery() {
     );
   };
 
+  // Nothing to show until admins upload images from the dashboard gallery.
+  if (companyImages.length === 0) return null;
+
   return (
     <section className=" bg-white mb-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -307,56 +209,11 @@ export default function CompanyGallery() {
           </p>
         </div>
 
-        {/* Desktop Grid Layout - Fixed Indices */}
-        <div className="hidden md:grid grid-cols-3 gap-4">
-          {/* First Row - 3 images */}
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[0]} index={0} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[1]} index={1} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[2]} index={2} />
-          </div>
-
-          {/* Second Row - 2 images */}
-          <div className="col-span-2">
-            <DesktopImageCard image={companyImages[3]} index={3} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[8]} index={8} />
-          </div>
-
-          {/* Third Row - 2 images */}
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[9]} index={9} />
-          </div>
-          <div className="col-span-2">
-            <DesktopImageCard image={companyImages[4]} index={4} />
-          </div>
-
-          {/* Fourth Row - 3 images */}
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[5]} index={5} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[6]} index={6} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[7]} index={7} />
-          </div>
-          
-          {/* Fifth Row - 3 images - CORRECTED INDICES */}
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[10]} index={10} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[11]} index={11} />
-          </div>
-          <div className="col-span-1">
-            <DesktopImageCard image={companyImages[12]} index={12} />
-          </div>
+        {/* Desktop Grid Layout - dynamic (uploaded + default images) */}
+        <div className="hidden md:grid grid-cols-3 gap-4 auto-rows-fr">
+          {companyImages.map((image, index) => (
+            <DesktopImageCard key={image.id} image={image} index={index} />
+          ))}
         </div>
 
         {/* Mobile Slider */}

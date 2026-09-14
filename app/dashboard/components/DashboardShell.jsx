@@ -111,6 +111,12 @@ const DashboardNav = () => {
       icon: Image,
       href: "/dashboard/client-showcase",
     },
+    {
+      id: "company-gallery",
+      label: "Manage Company Gallery",
+      icon: Image,
+      href: "/dashboard/company-gallery",
+    },
     ...(user?.role === "admin"
       ? [
           {
