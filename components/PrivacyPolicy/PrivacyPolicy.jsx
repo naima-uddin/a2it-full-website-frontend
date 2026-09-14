@@ -2,8 +2,10 @@
 import React from "react";
 import { FaShieldAlt, FaUserLock, FaDatabase, FaCookie } from "react-icons/fa";
 import Link from "next/link";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 const PrivacyPolicy = () => {
+  const site = useSiteSettings();
   return (
     <div className="min-h-screen bg-white text-black pt-24 pb-16 px-6 md:px-16 relative overflow-hidden">
       <div className="max-w-4xl mx-auto relative z-10">
@@ -233,8 +235,8 @@ const PrivacyPolicy = () => {
                 contact us:
               </p>
               <ul className="space-y-2">
-                <li>By email: info@a2it.com</li>
-                <li>By phone: +880 1846-937397</li>
+                <li>By email: {site.email}</li>
+                <li>By phone: {site.phone}</li>
                 <li>
                   By visiting this page on our website:{" "}
                   <Link
@@ -244,10 +246,7 @@ const PrivacyPolicy = () => {
                     Contact Us
                   </Link>
                 </li>
-                <li>
-                  By mail: Plot No 470, Road No 06 (Old 29), DOHS Mirpur, Dhaka
-                  Division, Bangladesh
-                </li>
+                <li>By mail: {(site.address || "").replace(/\n/g, ", ")}</li>
               </ul>
             </div>
           </section>

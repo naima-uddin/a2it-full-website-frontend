@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { redirectToThankYou } from "../shared/contactSuccessRedirect";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 import {
   Phone,
   Mail,
@@ -20,6 +21,8 @@ import {
 } from "lucide-react";
 
 export default function PromotionFooter() {
+  const site = useSiteSettings();
+  const telHref = `tel:${(site.phone || "").replace(/[^+\d]/g, "")}`;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -269,7 +272,7 @@ export default function PromotionFooter() {
 
             {/* Contact Info with Hover Effects */}
             <div className="grid grid-cols-2 gap-3">
-              <a href="mailto:service@a2itltd.com" className="group">
+              <a href={`mailto:${site.email}`} className="group">
                 <div className="flex items-center gap-2 p-3 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-orange-500 hover:bg-orange-500/10 transition-all">
                   <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Mail className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
@@ -277,13 +280,13 @@ export default function PromotionFooter() {
                   <div>
                     <p className="text-[10px] text-gray-400">Email Us</p>
                     <p className="text-xs font-medium group-hover:text-orange-300 transition-colors">
-                      service@a2itltd.com
+                      {site.email}
                     </p>
                   </div>
                 </div>
               </a>
 
-              <a href="tel:+8801846937397" className="group">
+              <a href={telHref} className="group">
                 <div className="flex items-center gap-2 p-3 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-orange-500 hover:bg-orange-500/10 transition-all">
                   <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Phone className="w-4 h-4 text-orange-400 group-hover:text-orange-300" />
@@ -291,7 +294,7 @@ export default function PromotionFooter() {
                   <div>
                     <p className="text-[10px] text-gray-400">Call Now</p>
                     <p className="text-xs font-medium group-hover:text-orange-300 transition-colors">
-                      +880 1846-937397
+                      {site.phone}
                     </p>
                   </div>
                 </div>

@@ -13,6 +13,7 @@ import {
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { redirectToThankYou } from "../shared/contactSuccessRedirect";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 // Dynamically import the map component with no SSR
 const ClientSideMap = dynamic(() => import("./ClientSideMap"), {
@@ -25,8 +26,6 @@ const ClientSideMap = dynamic(() => import("./ClientSideMap"), {
 });
 
 const officePosition = [23.836236, 90.358672];
-const officeAddress =
-  "Plot No 470, Road No 06 (Old 29), DOHS Mirpur, Dhaka Division, Bangladesh";
 
 const SectionHeader = ({ icon, title }) => (
   <div className="relative group">
@@ -45,6 +44,8 @@ const SectionHeader = ({ icon, title }) => (
 
 const ContactUs = () => {
   const router = useRouter();
+  const site = useSiteSettings();
+  const officeAddress = (site.address || "").replace(/\n/g, ", ");
   const [position, setPosition] = useState(officePosition);
   const [formData, setFormData] = useState({
     name: "",
@@ -166,7 +167,9 @@ const ContactUs = () => {
                   <h3 className="font-bold text-lg mb-1 text-black">
                     Our Address
                   </h3>
-                  <p className="text-[#006dff]">{officeAddress}</p>
+                  <p className="text-[#006dff] whitespace-pre-line">
+                    {site.address}
+                  </p>
                 </div>
               </div>
 
@@ -178,7 +181,7 @@ const ContactUs = () => {
                   <h3 className="font-bold text-lg mb-1 text-black">
                     Phone Number
                   </h3>
-                  <p className="text-[#006dff]">+880 1846-937397</p>
+                  <p className="text-[#006dff]">{site.phone}</p>
                 </div>
               </div>
 
@@ -190,7 +193,7 @@ const ContactUs = () => {
                   <h3 className="font-bold text-lg mb-1 text-black">
                     Email Address
                   </h3>
-                  <p className="text-[#006dff]">info@a2itltd.com</p>
+                  <p className="text-[#006dff]">{site.email}</p>
                 </div>
               </div>
 

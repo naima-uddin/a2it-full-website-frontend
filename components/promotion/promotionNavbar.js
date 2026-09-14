@@ -3,8 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { Phone, Mail, MessageCircle, Menu, X } from 'lucide-react';
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 const PromotionNavbar = () => {
+  const site = useSiteSettings();
+  const telHref = `tel:${(site.phone || "").replace(/[^+\d]/g, "")}`;
+  const fbUrl = site.social?.facebook || "#";
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -62,10 +66,10 @@ const PromotionNavbar = () => {
             <a href="https://a2itltd.com/">
               <div className="flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-1">
-                <img 
-                  className='w-8 sm:w-12 md:w-10 lg:w-14 object-contain transition-all duration-300' 
-                  src="/images/A2ITLogo.png" 
-                  alt="A2IT Logo" 
+                <img
+                  className='w-8 sm:w-12 md:w-10 lg:w-14 object-contain transition-all duration-300'
+                  src={site.logo || "/images/A2ITLogo.png"}
+                  alt={`${site.siteName} Logo`}
                 />
               </div>
             </div>
@@ -78,13 +82,13 @@ const PromotionNavbar = () => {
                 items-center gap-2
                 ${scrolled ? 'text-white bg-red-500 p-2 rounded-full' : 'text-white'}
               `}>
-                <a 
-                  href="mailto:service@a2itltd.com"
+                <a
+                  href={`mailto:${site.email}`}
                   className="hidden lg:flex items-center gap-2 group"
                 >
                   <Mail size={18} className="text-[#f5b342] group-hover:scale-110 transition-transform" />
                   <span className="text-sm hover:text-[#f5b342] transition-colors border-b border-dashed border-white/30 whitespace-nowrap">
-                    service@a2itltd.com
+                    {site.email}
                   </span>
                 </a>
               </div>
@@ -94,22 +98,22 @@ const PromotionNavbar = () => {
                 flex items-center gap-2
                 ${scrolled ? 'text-white bg-blue-500 p-2 rounded-full' : 'text-white'}
               `}>
-                <a 
-                  href="tel:+880 1846-937397"
+                <a
+                  href={telHref}
                   className="flex items-center gap-2 group"
                 >
                   <Phone size={18} className="text-[#f5b342] group-hover:scale-110 transition-transform" />
                   <span className="font-medium hover:text-[#f5b342] transition-colors whitespace-nowrap text-sm lg:text-sm">
-                    +880 1846-937397
+                    {site.phone}
                   </span>
                 </a>
               </div>
 
               {/* Chat Button */}
-              <a 
-  href="https://www.facebook.com/A2ITLtd"
+              <a
+  href={fbUrl}
   className={`
-    bg-[#f5b342] text-[#0b1c2f] font-semibold rounded-full 
+    bg-[#f5b342] text-[#0b1c2f] font-semibold rounded-full
     flex items-center gap-2 transition-all duration-300
     hover:bg-[#f5b342]/90 hover:scale-105 active:scale-95
     whitespace-nowrap group
@@ -156,8 +160,8 @@ const PromotionNavbar = () => {
               }
             `}>
               {/* Mobile Email */}
-              <a 
-                href="mailto:service@a2itltd.com"
+              <a
+                href={`mailto:${site.email}`}
                 className={`
                   flex items-center gap-3 p-2 rounded-lg transition-colors
                   ${scrolled ? 'text-gray-300' : 'text-white'}
@@ -165,12 +169,12 @@ const PromotionNavbar = () => {
                 `}
               >
                 <Mail size={18} className="text-[#f5b342]" />
-                <span className="text-sm">service@a2itltd.com</span>
+                <span className="text-sm">{site.email}</span>
               </a>
 
               {/* Mobile Phone (full) */}
-              <a 
-                href="tel:+880 1846-937397"
+              <a
+                href={telHref}
                 className={`
                   flex items-center gap-3 p-2 rounded-lg transition-colors
                   ${scrolled ? 'text-gray-300' : 'text-white'}
@@ -178,12 +182,12 @@ const PromotionNavbar = () => {
                 `}
               >
                 <Phone size={18} className="text-[#f5b342]" />
-                <span className="text-sm font-medium">+880 1846-937397</span>
+                <span className="text-sm font-medium">{site.phone}</span>
               </a>
 
               {/* Mobile Full Chat Button */}
               <button 
-  onClick={() => window.open('https://www.facebook.com/A2ITLtd', '_blank')}
+  onClick={() => window.open(fbUrl, '_blank')}
   className="
     w-full bg-[#f5b342] text-[#0b1c2f] font-semibold rounded-lg 
     flex items-center justify-center gap-2 py-3 px-4

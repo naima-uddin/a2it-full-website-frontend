@@ -4,8 +4,10 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image"; // ✅ Next.js Image
 import { FaFacebookF, FaInstagram, FaLinkedinIn } from "react-icons/fa";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 const WhoRWe = () => {
+  const site = useSiteSettings();
   const stats = [
     {
       value: "5",
@@ -96,24 +98,23 @@ const WhoRWe = () => {
             </p>
 
             <div className="flex space-x-4">
-              <a
-                href="https://www.facebook.com/A2ITLtd"
-                className="bg-[#0066ff] hover:bg-[#00f0ff] p-2 rounded text-white transition-colors"
-              >
-                <FaFacebookF />
-              </a>
-              <a
-                href="#"
-                className="bg-[#0066ff] hover:bg-[#00f0ff] p-2 rounded text-white transition-colors"
-              >
-                <FaInstagram />
-              </a>
-              <a
-                href="https://www.linkedin.com/in/a2itlimited/"
-                className="bg-[#0066ff] hover:bg-[#00f0ff] p-2 rounded text-white transition-colors"
-              >
-                <FaLinkedinIn />
-              </a>
+              {[
+                { url: site.social?.facebook, icon: <FaFacebookF /> },
+                { url: site.social?.instagram, icon: <FaInstagram /> },
+                { url: site.social?.linkedin, icon: <FaLinkedinIn /> },
+              ]
+                .filter((s) => s.url)
+                .map((s, i) => (
+                  <a
+                    key={i}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#0066ff] hover:bg-[#00f0ff] p-2 rounded text-white transition-colors"
+                  >
+                    {s.icon}
+                  </a>
+                ))}
             </div>
           </div>
         </motion.div>

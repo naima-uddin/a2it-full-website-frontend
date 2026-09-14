@@ -20,6 +20,7 @@ const Portfolio = () => {
   const [hoveredProject, setHoveredProject] = useState(null);
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [modalHiResLoaded, setModalHiResLoaded] = useState(false);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -253,7 +254,10 @@ const Portfolio = () => {
                 <div
                   key={`${project.id}-${index}`}
                   className="group flex flex-col bg-white rounded-2xl ring-1 ring-slate-200/70 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_8px_24px_-8px_rgba(15,23,42,0.10)] hover:ring-[#00f0ff]/40 hover:shadow-[0_4px_12px_rgba(0,102,255,0.06),0_20px_40px_-12px_rgba(0,102,255,0.22)] transition-all duration-300 transform hover:-translate-y-1.5 overflow-hidden relative cursor-pointer"
-                  onClick={() => setSelectedProject(project)}
+                  onClick={() => {
+                    setModalHiResLoaded(false);
+                    setSelectedProject(project);
+                  }}
                   onMouseEnter={() =>
                     window.innerWidth >= 768 &&
                     setHoveredProject(`${project.id}-${index}`)
@@ -391,14 +395,38 @@ const Portfolio = () => {
 
                 {/* LEFT: Full image */}
                 <div className="lg:w-[48%] shrink-0 bg-[#0a0a12] flex items-start justify-center p-4 sm:p-5 h-[38vh] lg:h-full overflow-y-auto">
-                  <img
-                    src={cldImage(
-                      selectedProject.image,
-                      "f_auto,q_auto:best,dpr_auto,w_1600,c_limit",
+                  <div className="relative w-full flex items-start justify-center">
+                    {/* Low-res placeholder (usually already cached from the grid) — shows instantly */}
+                    <img
+                      src={cldImage(
+                        selectedProject.image,
+                        "f_auto,q_auto:good,w_700,c_limit",
+                      )}
+                      alt={selectedProject.title}
+                      aria-hidden="true"
+                      className={`max-w-full h-auto rounded-xl object-contain transition-opacity duration-300 ${
+                        modalHiResLoaded ? "opacity-0" : "opacity-100"
+                      }`}
+                    />
+                    {/* High-res image fades in once fully loaded */}
+                    <img
+                      src={cldImage(
+                        selectedProject.image,
+                        "f_auto,q_auto:best,dpr_auto,w_1600,c_limit",
+                      )}
+                      alt={selectedProject.title}
+                      onLoad={() => setModalHiResLoaded(true)}
+                      className={`absolute inset-0 mx-auto max-w-full h-auto rounded-xl object-contain transition-opacity duration-500 ${
+                        modalHiResLoaded ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                    {/* Spinner while the hi-res version is still loading */}
+                    {!modalHiResLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-full border-2 border-[#00f0ff]/30 border-t-[#00f0ff] animate-spin" />
+                      </div>
                     )}
-                    alt={selectedProject.title}
-                    className="max-w-full h-auto rounded-xl object-contain"
-                  />
+                  </div>
                 </div>
 
                 {/* RIGHT: Details */}

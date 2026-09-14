@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { FiMail, FiPhone, FiMapPin } from "react-icons/fi";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 // Safe motion components that filter out Framer Motion props
 const MotionDiv =
@@ -18,6 +19,7 @@ const MotionDiv =
   }) => <div {...props}>{children}</div>);
 
 const ContactBanner = () => {
+  const site = useSiteSettings();
   return (
     <section className="py-12 md:py-20 px-4 sm:px-6 md:px-16 bg-white">
       <div className="max-w-7xl mx-auto">
@@ -44,26 +46,22 @@ const ContactBanner = () => {
                     <FiMail className="text-[#00f0ff] text-lg" />
                     <h4 className="font-medium text-sm md:text-base">Email Us</h4>
                   </div>
-                  <p className="text-black text-sm ">
-                    info@a2itltd.com
-                  </p>
+                  <p className="text-black text-sm ">{site.email}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 justify-center md:justify-start">
                   <div className="flex items-center justify-center md:justify-start gap-2">
                     <FiPhone className="text-[#00f0ff] text-lg" />
                     <h4 className="font-medium text-sm md:text-base">Call Us</h4>
                   </div>
-                  <p className="text-black text-sm  ">
-                    +880 1846-937397
-                  </p>
+                  <p className="text-black text-sm  ">{site.phone}</p>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 justify-center md:justify-start">
                   <div className="flex items-center justify-center md:justify-start gap-2">
                     <FiMapPin className="text-[#00f0ff] text-lg mt-0.5" />
                     <h4 className="font-medium text-sm md:text-base">Visit Us</h4>
                   </div>
-                  <p className="text-black text-xs  text-center sm:text-left mt-1">
-                    Plot No 470 Road No 06 (Old 29) DOHS Mirpur, Dhaka
+                  <p className="text-black text-xs  text-center sm:text-left mt-1 whitespace-pre-line">
+                    {site.address}
                   </p>
                 </div>
               </div>

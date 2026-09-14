@@ -1,8 +1,11 @@
 "use client";
 import React, { useState } from 'react';
 import ConsultModal from '@/components/promotion/promotionModal';
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 const Contact = () => {
+  const site = useSiteSettings();
+  const phoneDigits = (site.phone || "").replace(/[^\d]/g, "");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleOpenModal = () => {
@@ -14,14 +17,13 @@ const Contact = () => {
   };
 
   const handlePhoneClick = () => {
-    window.location.href = 'tel:+18723353070';
+    window.location.href = `tel:${(site.phone || "").replace(/[^+\d]/g, "")}`;
   };
 
   const handleLiveChatClick = () => {
     // Format: https://wa.me/phone_number?text=optional_message
-    const phoneNumber = '18723353070'; // Remove any special characters
     const message = encodeURIComponent("Hello! I'm interested in your services.");
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+    window.open(`https://wa.me/${phoneDigits}?text=${message}`, '_blank');
   };
 
   return (
@@ -78,7 +80,7 @@ const Contact = () => {
              <span className="text-lg md:text-xl">📞</span>
           </div>
           <span className="text-base md:text-xl font-mono font-bold tracking-tighter whitespace-nowrap">
-            +880 1846-937397
+            {site.phone}
           </span>
         </div>
 

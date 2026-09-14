@@ -3,9 +3,12 @@ import { PhoneCall, FileText, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import ConsultModal from '@/components/promotion/promotionModal';
 import {   MapPin } from 'lucide-react';
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 export default function FloatingChatButtons() {
+  const site = useSiteSettings();
+  const phoneDigits = (site.phone || "").replace(/[^\d]/g, "");
   const [hoveredButton, setHoveredButton] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [isModalOpen, setIsModalOpen] = useState(false);
   return (
     <>
       <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
@@ -61,7 +64,7 @@ export default function FloatingChatButtons() {
 
         {/* Bottom WhatsApp Button */}
 <button
-  onClick={() => window.open('https://wa.me/8801846937397', '_blank')}
+  onClick={() => window.open(`https://wa.me/${phoneDigits}`, '_blank')}
   className="fixed bottom-1 md:bottom-1 right-1 md:right-1 
     bg-green-600 hover:bg-green-700 text-white 
     p-2 md:p-3 rounded-full shadow-2xl 
