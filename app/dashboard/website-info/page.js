@@ -17,6 +17,8 @@ const EMPTY = {
   email: "",
   phone: "",
   address: "",
+  latitude: "",
+  longitude: "",
   social: { facebook: "", twitter: "", linkedin: "", instagram: "", youtube: "" },
 };
 
@@ -232,6 +234,32 @@ export default function WebsiteInfoPage() {
                   />
                   <p className="text-xs text-slate-500 mt-1">
                     Use separate lines — they are shown as-is on the site.
+                  </p>
+                </div>
+                <div>
+                  <label className={labelClass}>Map Latitude</label>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    step="any"
+                    value={form.latitude}
+                    onChange={(e) => set("latitude", e.target.value)}
+                    placeholder="23.836236"
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Map Longitude</label>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    step="any"
+                    value={form.longitude}
+                    onChange={(e) => set("longitude", e.target.value)}
+                    placeholder="90.358672"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Contact page map pin. Copy from Google Maps (right-click →
+                    coordinates).
                   </p>
                 </div>
               </div>
