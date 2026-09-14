@@ -4,9 +4,12 @@ import { FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import { FaFacebookF, FaTwitter, FaLinkedinIn } from "react-icons/fa";
 import Logo from "./Logo";
 import { usePathname } from "next/navigation";
+import { useSiteSettings } from "@/context/SiteSettingsContext";
 
 const Footer = () => {
   const pathname = usePathname();
+  const site = useSiteSettings();
+  const telHref = `tel:${(site.phone || "").replace(/[^+\d]/g, "")}`;
 
   // Check if current path is the one where navbar should be hidden
   const hideNavbarPaths = ["/promotions/website/"]; // Add your paths here
@@ -28,24 +31,24 @@ const Footer = () => {
     CONTACT: "/contact",
   };
 
-  // Social media links
+  // Social media links (from dashboard-managed settings; hidden if unset)
   const socialLinks = [
     {
       icon: <FaFacebookF />,
       color: "hover:text-[#1877F2]",
-      url: "https://www.facebook.com/A2ITLtd",
+      url: site.social?.facebook,
     },
     {
       icon: <FaTwitter />,
       color: "hover:text-[#1DA1F2]",
-      url: "https://twitter.com",
+      url: site.social?.twitter,
     },
     {
       icon: <FaLinkedinIn />,
       color: "hover:text-[#0A66C2]",
-      url: "https://www.linkedin.com/in/a2itlimited/",
+      url: site.social?.linkedin,
     },
-  ];
+  ].filter((s) => s.url);
 
   // Quick links
   const quickLinks = [
@@ -78,14 +81,14 @@ const Footer = () => {
                 <Logo />
               </div>
               <h2 className="text-xl md:text-3xl font-extrabold bg-gradient-to-r from-[#598cd8] to-[#1363f8] bg-clip-text text-transparent drop-shadow-md">
-                A2IT Ltd
+                {site.siteName}
               </h2>
             </div>
             <p className="text-[#006dff] font-semibold mb-2 text-sm md:text-xl">
-              Build Your Dreams
+              {site.tagline}
             </p>
             <p className="text-black text-xs md:text-base leading-relaxed">
-              Transforming ideas into digital reality.
+              {site.description}
             </p>
           </div>
 
@@ -116,30 +119,24 @@ const Footer = () => {
             <address className="not-italic text-black space-y-3 md:space-y-2 text-xs md:text-base">
               <div className="flex items-start gap-2">
                 <FaMapMarkerAlt className="text-[#006dff] mt-0.4 flex-shrink-0 mt-1.5" />
-                <p>
-                  Plot No 470
-                  <br />
-                  Road No 06
-                  <br />
-                  DOHS Mirpur, Dhaka
-                </p>
+                <p className="whitespace-pre-line">{site.address}</p>
               </div>
               <div className="flex items-center gap-2">
                 <FaPhone className="text-[#006dff] flex-shrink-0" />
                 <a
-                  href="tel:+8801846937397"
+                  href={telHref}
                   className="hover:text-[#0066ff] transition-colors"
                 >
-                  +880 1846-937397
+                  {site.phone}
                 </a>
               </div>
               <div className="flex items-center gap-2">
                 <FaEnvelope className="text-[#006dff] flex-shrink-0" />
                 <a
-                  href="mailto:info@a2itltd.com"
+                  href={`mailto:${site.email}`}
                   className="hover:text-[#0066ff] transition-colors"
                 >
-                  info@a2itltd.com
+                  {site.email}
                 </a>
               </div>
             </address>
@@ -181,7 +178,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-[#00f0ff]/20 pt-3 md:pt-4 text-center">
           <p className="text-black text-xs md:text-base">
-            ©A2It Ltd. All Rights Reserved
+            ©{site.siteName}. All Rights Reserved
           </p>
         </div>
       </div>

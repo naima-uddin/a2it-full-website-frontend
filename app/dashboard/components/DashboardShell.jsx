@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Image,
   TrendingUp,
+  Globe,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -127,6 +128,13 @@ const DashboardNav = () => {
           },
         ]
       : []),
+
+    {
+      id: "website-info",
+      label: "Website Info",
+      icon: Globe,
+      href: "/dashboard/website-info",
+    },
 
     {
       id: "settings",
