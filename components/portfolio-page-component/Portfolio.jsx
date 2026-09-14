@@ -5,6 +5,16 @@ import Link from "next/link";
 import { BiRightArrow } from "react-icons/bi";
 import { GoArrowUpRight } from "react-icons/go";
 
+// Inject Cloudinary delivery transformations so images render crisp on
+// retina/HD screens instead of being scaled-up (which looks blurry).
+// Falls back to the original URL for non-Cloudinary sources.
+const cldImage = (url, transform) => {
+  if (!url || typeof url !== "string" || !url.includes("/upload/")) {
+    return url;
+  }
+  return url.replace("/upload/", `/upload/${transform}/`);
+};
+
 const Portfolio = () => {
   const [activeFilter, setActiveFilter] = useState("All");
   const [hoveredProject, setHoveredProject] = useState(null);
@@ -255,8 +265,12 @@ const Portfolio = () => {
                   {/* IMAGE */}
                   <div className="relative overflow-hidden h-52 md:h-60">
                     <img
-                      src={project.image}
+                      src={cldImage(
+                        project.image,
+                        "f_auto,q_auto:best,dpr_auto,w_700,c_limit",
+                      )}
                       alt={project.title}
+                      loading="lazy"
                       className={`w-full h-full object-cover transition-transform duration-[600ms] ease-out ${
                         hoveredProject === `${project.id}-${index}`
                           ? "scale-[1.07]"
@@ -378,7 +392,10 @@ const Portfolio = () => {
                 {/* LEFT: Full image */}
                 <div className="lg:w-[48%] shrink-0 bg-[#0a0a12] flex items-start justify-center p-4 sm:p-5 h-[38vh] lg:h-full overflow-y-auto">
                   <img
-                    src={selectedProject.image}
+                    src={cldImage(
+                      selectedProject.image,
+                      "f_auto,q_auto:best,dpr_auto,w_1600,c_limit",
+                    )}
                     alt={selectedProject.title}
                     className="max-w-full h-auto rounded-xl object-contain"
                   />
