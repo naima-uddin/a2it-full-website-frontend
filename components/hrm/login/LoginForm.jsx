@@ -137,9 +137,6 @@ export default function LoginForm({
             <button type="button" onClick={() => setShowForgotModal(true)} className="forgot">
               Forgot Password?
             </button>
-            <span className="secure">
-              <i className="dot" /> Secure Connection
-            </span>
           </motion.div>
         </form>
       </div>
@@ -276,8 +273,8 @@ export default function LoginForm({
           transition: box-shadow 0.18s ease, border-color 0.18s ease;
         }
         .ctrl.on {
-          border-color: #5a5ff2;
-          box-shadow: 0 0 0 3px rgba(90, 95, 242, 0.22);
+          border-color: #000;
+          box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.22);
         }
         .ctrl.bad {
           border-color: #f87171;
@@ -360,7 +357,7 @@ export default function LoginForm({
           color: #4b5563;
         }
         .forgot:hover {
-          color: #5a5ff2;
+          color: #000;
           text-decoration: underline;
         }
         .secure {

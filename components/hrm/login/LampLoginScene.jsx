@@ -369,7 +369,15 @@ export default function LampLoginScene(formProps) {
           max-width: 420px;
           border-radius: 22px;
           padding: 34px 30px 30px;
-          background: linear-gradient(180deg, #e4eef4 0%, #d3e0e9 100%);
+          /* Semi-transparent frosted panel so the card blends softly into the
+             dark stage instead of sitting on it as a solid block. */
+          background: linear-gradient(
+            180deg,
+            rgba(228, 238, 244, 0.55) 0%,
+            rgba(211, 224, 233, 0.48) 100%
+          );
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
           border: 2px solid var(--theme-color);
           box-shadow:
             0 40px 80px -30px rgba(6, 20, 40, 0.85),
