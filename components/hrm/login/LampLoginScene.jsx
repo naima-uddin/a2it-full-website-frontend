@@ -68,8 +68,15 @@ export default function LampLoginScene(formProps) {
   const lit = config.lightOpacity > 0;
   const restHeight = lit ? 100 : 45; // resting length for the current state
   const PULL_THRESHOLD = 45; // drag this far (user units) to flip the lamp
+  // The string rect has a fixed BASE height in the SVG; we drive both the
+  // resting length AND the live drag through CSS transforms (scaleY on the
+  // string, translateY on the handle). Transforms are animated smoothly and
+  // render reliably on every mobile browser — unlike the CSS `height`/`y`
+  // geometry props, which iOS Safari ignores.
+  const STRING_BASE = 100;
   const stringHeight = Math.max(35, Math.min(180, restHeight + drag));
-  const handleY = 180 + stringHeight; // handle follows the string's bottom
+  const stringScaleY = stringHeight / STRING_BASE;
+  const handleShift = stringHeight - STRING_BASE; // handle follows the bottom
 
   const toggleLamp = () => setStateIndex((i) => (i + 1) % lampStates.length);
 
@@ -114,7 +121,13 @@ export default function LampLoginScene(formProps) {
       <div className="container">
         <div className="lamp-section">
           <div className="lamp-ambient-glow" />
-          <svg ref={svgRef} className="lamp-svg" viewBox="0 0 300 450" xmlns="http://www.w3.org/2000/svg">
+          <svg
+            ref={svgRef}
+            className="lamp-svg"
+            viewBox="0 0 300 450"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{ touchAction: "none" }}
+          >
             <defs>
               <linearGradient id="lightConeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
@@ -139,21 +152,31 @@ export default function LampLoginScene(formProps) {
               onPointerUp={onPullEnd}
               onPointerCancel={onPullEnd}
             >
-              {/* Wide invisible hit-area so the thin string is easy to grab. */}
-              <rect x="90" y="175" width="30" height={stringHeight + 45} fill="transparent" />
+              {/* Wide invisible hit-area (fixed, covers the full pull range) so
+                  the thin string is easy to grab — especially by thumb. */}
+              <rect x="84" y="175" width="42" height="245" fill="transparent" />
               <rect
                 className="lamp-string"
                 x="103.5"
-                width="3"
                 y="180"
-                style={{ height: `${stringHeight}px`, transition: dragging ? "none" : undefined }}
+                width="3"
+                height={STRING_BASE}
+                style={{
+                  transform: `scaleY(${stringScaleY})`,
+                  transition: dragging ? "none" : undefined,
+                }}
               />
               <rect
                 className="string-handle"
                 x="101"
+                y={180 + STRING_BASE}
                 width="8"
+                height="30"
                 rx="4"
-                style={{ y: `${handleY}px`, height: "30px", transition: dragging ? "none" : undefined }}
+                style={{
+                  transform: `translateY(${handleShift}px)`,
+                  transition: dragging ? "none" : undefined,
+                }}
               />
             </g>
 
@@ -188,6 +211,8 @@ export default function LampLoginScene(formProps) {
           --bg-color: #0b0f14;
           position: relative;
           min-height: 100vh;
+          /* dvh accounts for the mobile browser's collapsing address bar */
+          min-height: 100dvh;
           width: 100%;
           background-color: var(--bg-color);
           display: flex;
@@ -280,16 +305,18 @@ export default function LampLoginScene(formProps) {
         .lamp-section :global(.pull-string-group.dragging) {
           cursor: grabbing;
         }
-        /* The thin string stretches (height) and the handle drops (y) on pull.
-           Rect geometry props (height / y) transition smoothly where line
-           endpoints can't. */
+        /* The thin string stretches (scaleY from its top) and the handle drops
+           (translateY) on pull. Transforms animate smoothly and render on every
+           mobile browser, where the CSS height/y geometry props do not. */
         .lamp-section :global(.lamp-string) {
           fill: #555;
-          transition: height 0.45s cubic-bezier(0.34, 1.2, 0.4, 1);
+          transform-box: fill-box;
+          transform-origin: top;
+          transition: transform 0.45s cubic-bezier(0.34, 1.2, 0.4, 1);
         }
         .lamp-section :global(.string-handle) {
           fill: #888;
-          transition: y 0.45s cubic-bezier(0.34, 1.2, 0.4, 1);
+          transition: transform 0.45s cubic-bezier(0.34, 1.2, 0.4, 1);
         }
         .lamp-section :global(.pull-string-group:hover .string-handle) {
           fill: #ffffff;
@@ -355,13 +382,23 @@ export default function LampLoginScene(formProps) {
            lamp centred on top, form flows in below (still rising from the
            bottom). Absolute positioning and the sideways slide are undone. */
         @media (max-width: 860px) {
+          .stage {
+            /* Let tall (lamp + form) content scroll from the top instead of
+               being centred and clipped off-screen. */
+            align-items: flex-start;
+            padding: 28px 18px;
+          }
           .container {
             flex-direction: column;
-            justify-content: center;
-            gap: 1.5rem;
+            /* Sit the lamp nearer the top rather than dead-centre on mobile. */
+            min-height: calc(100dvh - 56px);
+            justify-content: flex-start;
+            padding-top: 2vh;
+            gap: 1.25rem;
           }
           .stage.lit .lamp-section {
             transform: none;
+            transition: none;
           }
           .lamp-svg {
             max-width: 240px;
@@ -371,22 +408,50 @@ export default function LampLoginScene(formProps) {
             top: auto;
             left: auto;
             width: 100%;
-            max-width: 400px;
-            transform: translateY(80px) scale(0.94);
+            max-width: 340px;
+            transform: translateY(60px) scale(0.94);
+            /* Collapse the box while OFF so it doesn't reserve a big empty gap
+               below the lamp; expand smoothly when the form rises in. */
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.3s ease 0s, transform 0.35s ease 0s,
+              max-height 0.4s ease 0s, visibility 0s linear 0.35s;
           }
           .login-section.show {
             transform: translateY(0) scale(1);
+            max-height: 900px;
+            transition: opacity 0.5s ease 0.1s,
+              transform 0.6s cubic-bezier(0.18, 1, 0.3, 1) 0.1s,
+              max-height 0.5s ease 0s, visibility 0s linear 0s;
           }
         }
         @media (max-width: 560px) {
           .stage {
-            padding: 30px 14px;
+            padding: 24px 12px;
+          }
+          .container {
+            min-height: calc(100dvh - 48px);
+            gap: 1rem;
           }
           .lamp-svg {
-            max-width: 200px;
+            max-width: 190px;
+          }
+          .lamp-hint {
+            font-size: 12px;
           }
           :global(.card) {
-            padding: 28px 20px 24px;
+            max-width: 340px;
+            padding: 22px 16px 18px;
+            border-radius: 16px;
+          }
+        }
+        @media (max-width: 360px) {
+          .lamp-svg {
+            max-width: 160px;
+          }
+          :global(.card) {
+            max-width: 300px;
+            padding: 20px 14px 16px;
           }
         }
       `}</style>

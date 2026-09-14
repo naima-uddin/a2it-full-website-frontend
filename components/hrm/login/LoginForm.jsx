@@ -396,9 +396,55 @@ export default function LoginForm({
           .pane {
             padding-left: 0;
           }
+          .head {
+            margin-bottom: 14px;
+          }
+          .title {
+            font-size: 19px;
+          }
+          .sub {
+            font-size: 12px;
+          }
+          :global(.card .row) {
+            margin-bottom: 11px;
+          }
+          .ctrl {
+            height: 42px;
+            gap: 8px;
+            padding: 0 10px;
+          }
+          /* 16px keeps iOS from auto-zooming the page when a field is focused. */
+          .ctrl input {
+            font-size: 16px;
+          }
+          /* Placeholder can be smaller safely — the anti-zoom rule only cares
+             about the field's font-size while it's focused (i.e. being typed in). */
+          .ctrl input::placeholder {
+            font-size: 13px;
+          }
+          :global(.card .go) {
+            height: 42px;
+            font-size: 14px;
+          }
           :global(.card .foot) {
+            margin-top: 11px;
             flex-direction: column;
-            gap: 6px;
+            gap: 5px;
+          }
+          .forgot,
+          .secure {
+            font-size: 11px;
+          }
+        }
+        @media (max-width: 380px) {
+          .title {
+            font-size: 17px;
+          }
+          .ctrl {
+            height: 40px;
+          }
+          :global(.card .go) {
+            height: 40px;
           }
         }
       `}</style>
