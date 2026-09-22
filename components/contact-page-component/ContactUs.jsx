@@ -25,7 +25,7 @@ const ClientSideMap = dynamic(() => import("./ClientSideMap"), {
   ),
 });
 
-const officePosition = [23.836236, 90.358672];
+const DEFAULT_OFFICE_POSITION = [23.836236, 90.358672];
 
 const SectionHeader = ({ icon, title }) => (
   <div className="relative group">
@@ -46,6 +46,10 @@ const ContactUs = () => {
   const router = useRouter();
   const site = useSiteSettings();
   const officeAddress = (site.address || "").replace(/\n/g, ", ");
+  const officePosition =
+    site.latitude != null && site.longitude != null
+      ? [Number(site.latitude), Number(site.longitude)]
+      : DEFAULT_OFFICE_POSITION;
   const [position, setPosition] = useState(officePosition);
   const [formData, setFormData] = useState({
     name: "",
