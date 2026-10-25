@@ -2015,9 +2015,9 @@ export default function AttendancePage() {
         return;
       }
       const d = await r.json();
-      const recs = (d.records || d.attendance || d.data?.records || [])
-        .slice()
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      const recs = uniqueAttendanceRecords(
+        (d.records || d.attendance || d.data?.records || []).slice(),
+      ).sort((a, b) => new Date(a.date) - new Date(b.date));
       if (recs.length === 0) {
         toast.error("No records to export for this month");
         return;
