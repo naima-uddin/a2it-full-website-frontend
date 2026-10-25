@@ -4,6 +4,9 @@ import BlogDetailClient from "@/components/blog/BlogDetailClient";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
 const slugify = (value) =>
   String(value || "")
     .toLowerCase()
@@ -62,7 +65,7 @@ export async function generateMetadata({ params }) {
 
   try {
     const resp = await fetch(`${API}/api/blog/${slug}`, {
-      cache: "force-cache",
+      cache: "no-store",
     });
 
     if (resp.ok) {
