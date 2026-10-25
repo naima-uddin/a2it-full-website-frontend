@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // output: "export",
+  output: "export",
   images: { unoptimized: true },
   trailingSlash: true,
   // NOTE: Next.js 16 removed the `eslint` config key (lint no longer runs as
