@@ -58,14 +58,40 @@ function getRole() {
   if (typeof window === "undefined") return null;
   try {
     const ad = localStorage.getItem("adminData");
-    if (ad) return JSON.parse(ad).role;
+    if (ad) {
+      const role = JSON.parse(ad).role;
+      if (role) return role;
+    }
     const ed = localStorage.getItem("employeeData");
-    if (ed) return JSON.parse(ed).role;
+    if (ed) {
+      const role = JSON.parse(ed).role;
+      if (role) return role;
+    }
+
+    const token = getToken();
+    if (token) {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.role || payload.user?.role || null;
+    }
   } catch (_) {}
   return null;
 }
 function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}` };
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function getApiError(res, fallback) {
+  try {
+    const data = await res.json();
+    return data?.message || data?.error || fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function toHolidayDateString(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T00:00:00.000Z`;
 }
 
 function DayToggle({ days, selected, onChange }) {
@@ -107,6 +133,7 @@ export default function OfficeSchedulePage() {
   const [calMonth, setCalMonth] = useState(_now.getMonth() + 1);
   const [calYear, setCalYear] = useState(_now.getFullYear());
   const [calHolidays, setCalHolidays] = useState([]);
+  const [scheduleOverrides, setScheduleOverrides] = useState([]);
   const [calLoading, setCalLoading] = useState(false);
 
   // Edit mode
@@ -133,12 +160,17 @@ export default function OfficeSchedulePage() {
 
   useEffect(() => {
     const role = getRole();
-    setIsAdmin(role === "admin" || role === "superAdmin");
+    setIsAdmin(
+      role === "admin" ||
+        role === "superAdmin" ||
+        Boolean(localStorage.getItem("adminToken")),
+    );
     fetchSchedule();
   }, []);
 
   useEffect(() => {
     fetchCalHolidays(calYear);
+    fetchScheduleOverrides();
   }, [calYear]);
 
   // ── API calls ──────────────────────────────────────────────────────────────
@@ -166,6 +198,19 @@ export default function OfficeSchedulePage() {
     } catch {
     } finally {
       setCalLoading(false);
+    }
+  };
+
+  const fetchScheduleOverrides = async () => {
+    try {
+      const res = await fetch(`${API}/override/history`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setScheduleOverrides(Array.isArray(data?.overrides) ? data.overrides : []);
+    } catch {
+      // The calendar can still render using the default weekly schedule.
     }
   };
 
@@ -213,13 +258,20 @@ export default function OfficeSchedulePage() {
           headers: { ...authHeaders(), "Content-Type": "application/json" },
           body: JSON.stringify({
             title: holidayForm.title.trim(),
-            date: d.toISOString(),
+            date: toHolidayDateString(d),
             type: holidayForm.type,
             year: d.getFullYear(),
           }),
         });
-        if (res.ok) added++;
-      } catch {}
+        if (res.ok) {
+          added++;
+        } else {
+          const message = await getApiError(res, "Failed to add holiday");
+          toast.error(message);
+        }
+      } catch {
+        toast.error("Network error while adding holiday");
+      }
     }
 
     if (added > 0) {
@@ -245,7 +297,7 @@ export default function OfficeSchedulePage() {
         toast.success("Holiday removed");
         await fetchCalHolidays(calYear);
         setSelectedCell(null);
-      } else toast.error("Failed to remove");
+      } else toast.error(await getApiError(res, "Failed to remove holiday"));
     } catch {
       toast.error("Network error");
     } finally {
@@ -255,7 +307,6 @@ export default function OfficeSchedulePage() {
 
   const handleMakeWorkingDay = async () => {
     if (!selectedCell) return;
-    const newOff = currentDays.filter((d) => d !== selectedCell.dayName);
     const dateStr = `${calYear}-${String(calMonth).padStart(2, "0")}-${String(selectedCell.day).padStart(2, "0")}`;
     setEditSaving(true);
     try {
@@ -265,13 +316,17 @@ export default function OfficeSchedulePage() {
         body: JSON.stringify({
           startDate: dateStr,
           endDate: dateStr,
-          weeklyOffDays: newOff,
+          // An empty list means every day in this one-day range is a working day.
+          weeklyOffDays: [],
         }),
       });
       if (res.ok) {
         toast.success("Marked as working day for this date");
+        await fetchScheduleOverrides();
         setSelectedCell(null);
-      } else toast.error("Failed to override");
+      } else {
+        toast.error(await getApiError(res, "Failed to override"));
+      }
     } catch {
       toast.error("Network error");
     } finally {
@@ -290,13 +345,27 @@ export default function OfficeSchedulePage() {
       const dayName = DAYS[(firstDow + d - 1) % 7];
       const isWeekend = currentDays.includes(dayName);
       const dateStr = `${calYear}-${String(calMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const override = scheduleOverrides.find((item) => {
+        const start = (item.startDate || "").split("T")[0];
+        const end = (item.endDate || "").split("T")[0];
+        return start <= dateStr && end >= dateStr && item.isActive !== false;
+      });
+      const isOverrideWeekend = override
+        ? override.weeklyOffDays.includes(dayName)
+        : isWeekend;
       const holiday =
         calHolidays.find((h) => (h.date || "").split("T")[0] === dateStr) ||
         null;
-      cells.push({ day: d, dayName, isWeekend, holiday });
+      cells.push({
+        day: d,
+        dayName,
+        isWeekend: isOverrideWeekend,
+        holiday,
+        hasScheduleOverride: Boolean(override),
+      });
     }
     return cells;
-  }, [calMonth, calYear, currentDays, calHolidays]);
+  }, [calMonth, calYear, currentDays, calHolidays, scheduleOverrides]);
 
   const calStats = useMemo(() => {
     const days = calCells.filter(Boolean);
