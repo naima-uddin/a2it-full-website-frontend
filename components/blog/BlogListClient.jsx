@@ -375,7 +375,9 @@ export default function BlogListClient() {
                   <div>
                     {featuredBlogs.length === 1 ? (
                       <Link
-                        href={`/blog/${featuredBlogs[0].slug}`}
+                        href={`/blog/${encodeURIComponent(
+                          featuredBlogs[0].slug || featuredBlogs[0]._id,
+                        )}`}
                         className="block"
                       >
                         <div className="relative h-48 sm:h-56 md:h-64 lg:h-[360px] rounded-lg sm:rounded-2xl overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 group cursor-pointer shadow-lg sm:shadow-2xl">
@@ -520,7 +522,9 @@ export default function BlogListClient() {
                                 className="w-full flex-shrink-0"
                               >
                                 <Link
-                                  href={`/blog/${featured.slug}`}
+                                  href={`/blog/${encodeURIComponent(
+                                    featured.slug || featured._id,
+                                  )}`}
                                   className="block"
                                 >
                                   <div className="relative h-[280px] md:h-[320px] lg:h-[360px] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 group cursor-pointer">
@@ -812,7 +816,7 @@ export default function BlogListClient() {
               {blogs.map((blog) => (
                 <Link
                   key={blog._id || blog.id}
-                  href={`/blog/${blog.slug}`}
+                  href={`/blog/${encodeURIComponent(blog.slug || blog._id)}`}
                   className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
                 >
                   {/* Thumbnail */}
