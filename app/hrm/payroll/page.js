@@ -320,6 +320,7 @@ function PayrollDetail({ payroll }) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [monthHolidays, setMonthHolidays] = useState([]); // Holiday model rows for this month
   const [weeklyOffDays, setWeeklyOffDays] = useState(["Friday", "Saturday"]);
+  const [scheduleOverrides, setScheduleOverrides] = useState([]);
 
   useEffect(() => {
     if (!payroll?._id) return;
@@ -426,7 +427,19 @@ function PayrollDetail({ payroll }) {
       })
       .catch(() => {});
 
-    // 5. Holidays for the month (so holiday days aren't shown as Absent)
+    // Date-specific working-day overrides must also be applied to payroll.
+    fetch(`${API}/override/history`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled) {
+          setScheduleOverrides(
+            Array.isArray(data?.overrides) ? data.overrides : [],
+          );
+        }
+      })
+      .catch(() => {});
+
+    // 6. Holidays for the month (so holiday days aren't shown as Absent)
     fetch(`${API}/holiday?year=${y}`, { headers: authHeaders() })
       .then((r) => r.json())
       .then((data) => {
@@ -434,11 +447,11 @@ function PayrollDetail({ payroll }) {
         const all = data?.holidays || [];
         setMonthHolidays(
           all.filter((h) => {
-            if (!h.isActive) return false;
-            const hd = new Date(h.date);
-            return (
-              hd.getMonth() + 1 === Number(m) && hd.getFullYear() === Number(y)
-            );
+            if (h.isActive === false || !h.date) return false;
+            const key = new Date(h.date).toLocaleDateString("en-CA", {
+              timeZone: "Asia/Dhaka",
+            });
+            return key.startsWith(`${y}-${String(m).padStart(2, "0")}-`);
           }),
         );
       })
@@ -518,6 +531,23 @@ function PayrollDetail({ payroll }) {
         .filter((n) => n >= 0),
     );
     const HOL = new Set(["Govt Holiday", "Company Holiday"]);
+    const effectiveOffDays = (day) => {
+      const dateKey = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const override = scheduleOverrides.find((item) => {
+        const start = new Date(item.startDate).toLocaleDateString("en-CA", {
+          timeZone: "Asia/Dhaka",
+        });
+        const end = new Date(item.endDate).toLocaleDateString("en-CA", {
+          timeZone: "Asia/Dhaka",
+        });
+        return (
+          item.isActive !== false &&
+          start <= dateKey &&
+          end >= dateKey
+        );
+      });
+      return override?.weeklyOffDays || weeklyOffDays;
+    };
     const byDay = {};
     const holByDay = {};
     attLogs.forEach((r) => {
@@ -554,11 +584,13 @@ function PayrollDetail({ payroll }) {
       working = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateObj = new Date(y, m - 1, d);
-      if (offDayNums.has(dateObj.getDay())) continue; // weekly off
-      if (holByDay[d]) continue; // holiday → not a working day
+      const r = byDay[d];
+      const dayName = DAY_NAMES[dateObj.getDay()];
+      const isOverrideOff = effectiveOffDays(d).includes(dayName);
+      if (!r && isOverrideOff) continue; // weekly off
+      if (!r && holByDay[d]) continue; // holiday → not a working day
       working++;
       const isFuture = isCurr && d > now.getDate();
-      const r = byDay[d];
       if (!r) {
         if (!isFuture) absent++; // past working day, no record
         continue;
@@ -610,10 +642,15 @@ function PayrollDetail({ payroll }) {
         ? liveAtt.absent
         : att.absentDays || 0;
 
-  // Full-month working days (divisor) — stored value is authoritative; fall
-  // back to the live count.
+  // A saved payroll's working-day divisor is the value used to calculate its
+  // stored salary/deductions. Keep the eye-view calculation on that same
+  // value; live attendance is only a fallback for unsaved preview rows.
   const workDays =
-    att.totalWorkingDays || (liveAtt ? liveAtt.workingDays : 0) || 1;
+    (preferStored && att.totalWorkingDays != null
+      ? att.totalWorkingDays
+      : liveAtt?.workingDays) ||
+    att.totalWorkingDays ||
+    1;
   // Present days — stored for saved payrolls, live for preview rows.
   const presentDays =
     preferStored && att.presentDays != null
@@ -1399,7 +1436,7 @@ function PayrollDetail({ payroll }) {
         </p>
         <p>
           ① Daily rate = monthly salary <strong>BDT {fmt(sd.monthlySalary)}</strong>{" "}
-          ÷ {att.totalWorkingDays} working days ={" "}
+          ÷ {workDays} working days ={" "}
           <strong>BDT {fmt(dailyRate)}</strong>
         </p>
         <p>
@@ -1409,7 +1446,7 @@ function PayrollDetail({ payroll }) {
         </p>
         <p>
           ③ Absent deduction = monthly salary − earned pay for present days (
-          {att.presentDays}/{att.totalWorkingDays})
+          {presentDays}/{workDays})
         </p>
         {leaveDeduction > 0 && (
           <p>
