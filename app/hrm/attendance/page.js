@@ -2149,17 +2149,6 @@ export default function AttendancePage() {
   // Set of role=employee user IDs — used to drop any admin/moderator attendance
   // rows from the admin table so only employee records are shown.
   const employeeIdSet = new Set(employees.map((e) => String(e._id)));
-  const pickRosterRecord = (current, candidate) => {
-    if (!candidate) return current;
-    if (!current) return candidate;
-    if (current.correctedByAdmin !== candidate.correctedByAdmin) {
-      return current.correctedByAdmin ? current : candidate;
-    }
-    return new Date(current.updatedAt || current.createdAt || 0) >=
-      new Date(candidate.updatedAt || candidate.createdAt || 0)
-      ? current
-      : candidate;
-  };
   const adminDisplayRecords = adminRosterMode
     ? employees.map((emp) => {
         const dayKey = dateRange.start;
@@ -2168,11 +2157,9 @@ export default function AttendancePage() {
             (r) =>
               String(r.employee?._id || r.employee) === String(emp._id) &&
               r.date &&
-              new Date(r.date).toLocaleDateString("en-CA", {
-                timeZone: "Asia/Dhaka",
-              }) === dayKey,
+              dhakaDateKey(r.date) === dayKey,
           )
-          .reduce(pickRosterRecord, null);
+          .reduce(pickAttendanceRecord, null);
         return (
           rec || {
             _id: "ph-" + emp._id,
