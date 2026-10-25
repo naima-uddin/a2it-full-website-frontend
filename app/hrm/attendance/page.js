@@ -289,6 +289,43 @@ const isoDate = (d = new Date()) => {
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+const dhakaDateKey = (value) => {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(value));
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
+};
+const pickAttendanceRecord = (current, candidate) => {
+  if (!current) return candidate;
+  if (!candidate) return current;
+  if (current.correctedByAdmin !== candidate.correctedByAdmin) {
+    return current.correctedByAdmin ? current : candidate;
+  }
+  return new Date(current.updatedAt || 0) >= new Date(candidate.updatedAt || 0)
+    ? current
+    : candidate;
+};
+const uniqueAttendanceRecords = (records) =>
+  Array.from(
+    records.reduce((byDay, record) => {
+      const employeeKey =
+        record.employee && typeof record.employee === "object"
+          ? record.employee._id || record.employee.employeeId
+          : record.employee || record.employeeId || "self";
+      const key = `${employeeKey || "self"}:${dhakaDateKey(record.date)}`;
+      const current = byDay.get(key);
+      byDay.set(key, pickAttendanceRecord(current, record));
+      return byDay;
+    }, new Map()).values(),
+  );
 const toTStr = (dt) =>
   dt
     ? new Date(dt).toLocaleTimeString("en", {
@@ -397,6 +434,7 @@ function classifyRec(rec) {
     }
     return "present";
   }
+
   // Fallback for generic/unknown statuses (e.g. "Clocked In"): derive from
   // the clock-in time.
   if (!rec?.clockIn) return "miss";
@@ -407,6 +445,88 @@ function classifyRec(rec) {
   // epsilon absorbs floating-point noise at the boundary)
   if (hours > getLateThreshold(rec) + 1e-9) return "late";
   return "present";
+}
+
+function getEmployeeMonthSummary(records, weeklyOffDays, holidays, month, year) {
+  const holidayStatuses = new Set(["Weekly Off", "Govt Holiday", "Company Holiday"]);
+  const offDayNums = new Set(
+    (weeklyOffDays || [])
+      .map((name) => DAY_NAMES.indexOf(name))
+      .filter((day) => day >= 0),
+  );
+  const pickBetter = (a, b) => {
+    if (!b) return a;
+    if (!a) return b;
+    if (a.correctedByAdmin !== b.correctedByAdmin) {
+      return a.correctedByAdmin ? a : b;
+    }
+    return new Date(a.updatedAt || 0) >= new Date(b.updatedAt || 0) ? a : b;
+  };
+  const byDay = {};
+  const holidayByDay = {};
+  (Array.isArray(records) ? records : []).filter(Boolean).forEach((record) => {
+    if (!record.date) return;
+    const day = Number(new Date(record.date).toLocaleDateString("en-BD", {
+      timeZone: "Asia/Dhaka",
+      day: "numeric",
+    }));
+    if (holidayStatuses.has(record.status)) {
+      holidayByDay[day] = pickBetter(record, holidayByDay[day]);
+    } else {
+      byDay[day] = pickBetter(record, byDay[day]);
+    }
+  });
+  (Array.isArray(holidays) ? holidays : []).forEach((holiday) => {
+    if (!holiday?.date) return;
+    const day = Number(new Date(holiday.date).toLocaleDateString("en-BD", {
+      timeZone: "Asia/Dhaka",
+      day: "numeric",
+    }));
+    if (!holidayByDay[day]) {
+      holidayByDay[day] = {
+        status: holiday.type === "GOVT" ? "Govt Holiday" : "Company Holiday",
+      };
+    }
+  });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let present = 0;
+  let late = 0;
+  let absent = 0;
+  let leaveHalf = 0;
+  let paidLeave = 0;
+  for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) {
+    const date = new Date(year, month - 1, day);
+    if (offDayNums.has(date.getDay()) || holidayByDay[day]) continue;
+    const record = byDay[day];
+    if (!record) {
+      if (date <= today) absent++;
+      continue;
+    }
+    const classification = classifyRec(record);
+    if (classification === "present") present++;
+    else if (classification === "late") late++;
+    else if (classification === "miss") absent++;
+    else if (classification === "halfday") leaveHalf++;
+    else {
+      leaveHalf++;
+      if (record.status === "Half Paid Leave") {
+        paidLeave += 0.5;
+        absent += 0.5;
+      } else if (record.status === "Unpaid Leave") {
+        absent++;
+      } else {
+        paidLeave++;
+      }
+    }
+  }
+  return {
+    present: present + late + paidLeave,
+    absent,
+    late,
+    lateDeduction: Math.floor(late / 3),
+    leaveHalf,
+  };
 }
 
 function EmployeeMonthView({
@@ -1740,9 +1860,9 @@ export default function AttendancePage() {
         return;
       }
       const d = await r.json();
-      const recs = (d.records || d.attendance || d.data?.records || [])
-        .slice()
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      const recs = uniqueAttendanceRecords(
+        (d.records || d.attendance || d.data?.records || []).slice(),
+      ).sort((a, b) => new Date(a.date) - new Date(b.date));
 
       if (recs.length === 0) {
         toast.error("No records to export for this period");
@@ -1857,6 +1977,7 @@ export default function AttendancePage() {
       URL.revokeObjectURL(url);
       toast.success("Excel downloaded");
     } catch (err) {
+      console.error("Attendance Excel export failed", err);
       toast.error("Export failed");
     } finally {
       setExportLoading(false);
@@ -1928,6 +2049,17 @@ export default function AttendancePage() {
         <AttendanceReportPDF
           attendance={recs}
           dateRange={{ startDate: mStart, endDate: mEnd }}
+          filterMonth={filterMonth}
+          filterYear={filterYear}
+          weeklyOffDays={weeklyOffDays}
+          holidays={monthHolidays}
+          monthSummary={getEmployeeMonthSummary(
+            recs,
+            weeklyOffDays,
+            monthHolidays,
+            filterMonth,
+            filterYear,
+          )}
           isAdmin={false}
           userData={userData}
           selectedEmployeeName={fullName}
@@ -1942,6 +2074,7 @@ export default function AttendancePage() {
       URL.revokeObjectURL(url);
       toast.success("PDF downloaded");
     } catch (err) {
+      console.error("Attendance PDF export failed", err);
       toast.error("PDF export failed");
     } finally {
       setExportLoading(false);

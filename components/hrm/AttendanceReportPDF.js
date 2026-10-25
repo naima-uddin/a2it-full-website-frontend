@@ -44,8 +44,18 @@ const calculateLateEarlyMinutes = (clockInTime, shiftStart, recordStatus, lateTh
   try {
     const clockIn = new Date(clockInTime);
     const [shiftHour, shiftMinute] = shiftStart.split(':').map(Number);
-    const clockInHour = clockIn.getHours();
-    const clockInMinute = clockIn.getMinutes();
+    const clockInParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Dhaka",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(clockIn);
+    const clockInHour = Number(
+      clockInParts.find((part) => part.type === "hour")?.value,
+    );
+    const clockInMinute = Number(
+      clockInParts.find((part) => part.type === "minute")?.value,
+    );
     
     const clockInTotalMinutes = clockInHour * 60 + clockInMinute;
     const shiftTotalMinutes = shiftHour * 60 + shiftMinute;
@@ -227,7 +237,7 @@ const styles = StyleSheet.create({
   
   summaryCard: {
     flex: 1,
-    minWidth: "23%",
+    minWidth: "18%",
     padding: 8,
     borderRadius: 6,
     marginBottom: 6,
@@ -456,9 +466,49 @@ const AttendanceReportPDF = ({
   userData = {}, 
   isAdmin = false,
   selectedEmployeeName = '',
-  employeeDetails = {}
+  employeeDetails = {},
+  weeklyOffDays = [],
+  holidays = [],
+  filterMonth,
+  filterYear,
+  monthSummary = null,
 }) => {
-    const sortedAttendance = [...attendance].sort((a, b) => {
+  const getDhakaDateKey = (value) => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Dhaka",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date(value));
+    const values = Object.fromEntries(
+      parts
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value]),
+    );
+    return `${values.year}-${values.month}-${values.day}`;
+  };
+
+  // A legacy auto-absent job can leave an absent row beside the real
+  // clock-in row. A report must contain one row per employee per Dhaka day.
+  const pickBetterRecord = (current, candidate) => {
+    if (!current) return candidate;
+    if (!candidate) return current;
+    if (current.correctedByAdmin !== candidate.correctedByAdmin) {
+      return current.correctedByAdmin ? current : candidate;
+    }
+    return new Date(current.updatedAt || 0) >= new Date(candidate.updatedAt || 0)
+      ? current
+      : candidate;
+  };
+  const uniqueAttendance = Array.from(
+    attendance.reduce((byDay, record) => {
+      const key = getDhakaDateKey(record.date);
+      const current = byDay.get(key);
+      byDay.set(key, pickBetterRecord(current, record));
+      return byDay;
+    }, new Map()).values(),
+  );
+  const sortedAttendance = uniqueAttendance.sort((a, b) => {
     const dateA = new Date(a.date);
     const dateB = new Date(b.date);
     return dateA - dateB;
@@ -468,7 +518,12 @@ const AttendanceReportPDF = ({
   const formatDate = (dateString) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+      return date.toLocaleDateString('en-US', {
+        timeZone: 'Asia/Dhaka',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      });
     } catch {
       return dateString || "-";
     }
@@ -477,7 +532,12 @@ const AttendanceReportPDF = ({
   const formatTime = (timeString) => {
     try {
       const date = new Date(timeString);
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      return date.toLocaleTimeString('en-US', {
+        timeZone: 'Asia/Dhaka',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
     } catch {
       return timeString || "-";
     }
@@ -517,20 +577,7 @@ const AttendanceReportPDF = ({
   };
   
   // ✅ Calculate statistics - সব স্ট্যাটাসের জন্য কাউন্ট যোগ করা হলো
-  const presentCount = attendance.filter(a => 
-    a.status === "Present" || 
-    a.status === "Present (On Time)" || 
-    a.status === "Present (Late)" || 
-    a.status === "Present (Early)"
-  ).length;
-  
-  const absentCount = attendance.filter(a => a.status === "Absent").length;
-  const leaveCount = attendance.filter(a => a.status === "Leave").length;
-  const govtHolidayCount = attendance.filter(a => a.status === "Govt Holiday" || a.status === "Holiday").length;
-  const weeklyOffCount = attendance.filter(a => a.status === "Weekly Off").length;
-  const offDayCount = attendance.filter(a => a.status === "Company Holiday").length;
-  
-  const lateEarlyStats = attendance.reduce((stats, record) => {
+  const lateEarlyStats = uniqueAttendance.reduce((stats, record) => {
     const lateEarly = calculateLateEarlyMinutes(
       record.clockIn,
       record.shift?.start || "09:00",
@@ -551,9 +598,119 @@ const AttendanceReportPDF = ({
     
     return stats;
   }, { lateCount: 0, lateMinutes: 0, earlyCount: 0, earlyMinutes: 0, onTimeCount: 0 });
-  
-  const totalHours = attendance.reduce((sum, a) => sum + (a.totalHours || 0), 0);
-  const attendanceRate = attendance.length > 0 ? (presentCount / attendance.length) * 100 : 0;
+
+  const dayParts = (value) =>
+    Object.fromEntries(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Dhaka",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        weekday: "long",
+        hour: "numeric",
+        minute: "numeric",
+        hourCycle: "h23",
+      })
+        .formatToParts(new Date(value))
+        .filter((part) => part.type !== "literal")
+        .map((part) => [part.type, part.value]),
+    );
+  const rangeStart = dateRange.startDate
+    ? new Date(`${dateRange.startDate}T12:00:00`)
+    : null;
+  const month = rangeStart
+    ? rangeStart.getMonth() + 1
+    : Number(filterMonth);
+  const year = rangeStart ? rangeStart.getFullYear() : Number(filterYear);
+  const daysInMonth =
+    month && year ? new Date(year, month, 0).getDate() : uniqueAttendance.length;
+  const offDays = new Set(weeklyOffDays);
+  const holidayDays = new Set(
+    holidays
+      .filter((holiday) => holiday?.date)
+      .map((holiday) => {
+        const parts = dayParts(holiday.date);
+        return `${parts.year}-${parts.month}-${parts.day}`;
+      }),
+  );
+  const recordsByDay = new Map();
+  uniqueAttendance.forEach((record) => {
+    if (!record?.date || Number.isNaN(new Date(record.date).getTime())) return;
+    const parts = dayParts(record.date);
+    const key = `${parts.year}-${parts.month}-${parts.day}`;
+    if (["Weekly Off", "Govt Holiday", "Company Holiday"].includes(record.status)) {
+      holidayDays.add(key);
+    }
+    const current = recordsByDay.get(key);
+    if (!current || pickBetterRecord(current, record) === record) {
+      recordsByDay.set(key, record);
+    }
+  });
+  const todayParts = dayParts(new Date());
+  const todayKey = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
+  const classifyForSummary = (record) => {
+    const status = record?.status || "";
+    if (status.toLowerCase().includes("leave")) return "leave";
+    if (status === "Half Day") return "halfday";
+    if (status === "Absent") return "miss";
+    if (status === "Late") return "late";
+    const parts = record?.clockIn ? dayParts(record.clockIn) : null;
+    const clockMinutes = parts
+      ? Number(parts.hour || 0) * 60 + Number(parts.minute || 0)
+      : 0;
+    const shift = record?.shift?.start || "09:00";
+    const [shiftHour, shiftMinute] = shift.split(":").map(Number);
+    const threshold = shiftHour * 60 + shiftMinute + 10;
+    if (status === "Present" || status === "Early") {
+      return parts && clockMinutes < 720 && clockMinutes > threshold
+        ? "late"
+        : "present";
+    }
+    if (!record?.clockIn || clockMinutes >= 720) return "miss";
+    return clockMinutes > threshold ? "late" : "present";
+  };
+  let presentCount = 0;
+  let absentCount = 0;
+  let lateCount = 0;
+  let leaveCount = 0;
+  let paidLeaveCount = 0;
+  let halfDayCount = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month - 1, day);
+    const parts = dayParts(date);
+    const key = `${parts.year}-${parts.month}-${parts.day}`;
+    if (offDays.has(parts.weekday) || holidayDays.has(key)) continue;
+    const record = recordsByDay.get(key);
+    if (!record) {
+      const dayDate = new Date(year, month - 1, day);
+      const todayDate = new Date(
+        Number(todayParts.year),
+        Number(todayParts.month) - 1,
+        Number(todayParts.day),
+      );
+      if (dayDate <= todayDate) absentCount++;
+      continue;
+    }
+    const classification = classifyForSummary(record);
+    if (classification === "present") presentCount++;
+    else if (classification === "late") lateCount++;
+    else if (classification === "miss") absentCount++;
+    else if (classification === "halfday") halfDayCount++;
+    else {
+      leaveCount++;
+      if (record.status === "Half Paid Leave") {
+        paidLeaveCount += 0.5;
+        absentCount += 0.5;
+      } else if (record.status === "Unpaid Leave") {
+        absentCount++;
+      } else {
+        paidLeaveCount++;
+      }
+    }
+  }
+  const presentSummary = presentCount + lateCount + paidLeaveCount;
+  const leaveHalfCount = leaveCount + halfDayCount;
+  const lateDeductionDays = Math.floor(lateCount / 3);
   
   // ✅ Employee name extraction function
   const getEmployeeName = (record) => {
@@ -653,80 +810,20 @@ const AttendanceReportPDF = ({
     return "";
   };
   
-  // ✅ SUMMARY cards - সব স্ট্যাটাসের জন্য কার্ড যোগ করা হলো
+  // Keep the exported summary aligned with the attendance month view.
+  const reportSummary = monthSummary || {
+    present: presentSummary,
+    absent: absentCount,
+    late: lateCount,
+    lateDeduction: lateDeductionDays,
+    leaveHalf: leaveHalfCount,
+  };
   const summaryCards = [
-    { 
-      label: "Total Days", 
-      value: attendance.length, 
-      subtext: "in period", 
-      color: "#4C51BF" 
-    },
-    { 
-      label: "Present", 
-      value: presentCount, 
-      subtext: `${((presentCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#38A169" 
-    },
-    { 
-      label: "Absent", 
-      value: absentCount, 
-      subtext: `${((absentCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#E53E3E" 
-    },
-         { 
-      label: "Late", 
-      value: lateEarlyStats.lateCount, 
-      subtext: lateEarlyStats.lateCount > 0 ? `Avg: ${(lateEarlyStats.lateMinutes/lateEarlyStats.lateCount).toFixed(0)}m` : 'None', 
-      color: "#D69E2E" 
-    },
-    { 
-      label: "Early", 
-      value: lateEarlyStats.earlyCount, 
-      subtext: lateEarlyStats.earlyCount > 0 ? `Avg: ${(lateEarlyStats.earlyMinutes/lateEarlyStats.earlyCount).toFixed(0)}m` : 'None', 
-      color: "#805AD5" 
-    },
-    { 
-      label: "On Time", 
-      value: lateEarlyStats.onTimeCount, 
-      subtext: `${((lateEarlyStats.onTimeCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#319795" 
-    },
-    { 
-      label: "Leave", 
-      value: leaveCount, 
-      subtext: `${((leaveCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#3182CE" 
-    },
-    { 
-      label: "Weekly Off", 
-      value: weeklyOffCount, 
-      subtext: `${((weeklyOffCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#4A5568" 
-    },
-    { 
-      label: "Govt Holiday", 
-      value: govtHolidayCount, 
-      subtext: `${((govtHolidayCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#6B46C1" 
-    },
-    { 
-      label: "Company Holiday", 
-      value: offDayCount, 
-      subtext: `${((offDayCount/attendance.length)*100 || 0).toFixed(1)}%`, 
-      color: "#718096" 
-    },
-    { 
-      label: "Total Hrs", 
-      value: totalHours.toFixed(1), 
-      subtext: "hours worked", 
-      color: "#3182CE" 
-    },
-    { 
-      label: "Rate", 
-      value: attendanceRate.toFixed(1) + "%", 
-      subtext: "attendance %", 
-      color: "#6B46C1" 
-    },
+    { label: "Present", value: reportSummary.present, color: "#38A169" },
+    { label: "Absent", value: reportSummary.absent, color: "#E53E3E" },
+    { label: "Late (×days)", value: reportSummary.late, color: "#D69E2E" },
+    { label: "Late Deduction", value: reportSummary.lateDeduction, color: "#DD6B20" },
+    { label: "Leave / Half", value: reportSummary.leaveHalf, color: "#805AD5" },
   ];
   
   // ✅ Filter badges
@@ -765,7 +862,8 @@ const AttendanceReportPDF = ({
               {isAdmin ? 'Admin Report' : 'Employee Report'}
             </Text>
             <Text style={styles.reportDate}>
-              {new Date().toLocaleDateString('en-US', { 
+              {new Date().toLocaleDateString('en-US', {
+                timeZone: 'Asia/Dhaka',
                 day: 'numeric', 
                 month: 'short', 
                 year: 'numeric',
@@ -854,7 +952,10 @@ const AttendanceReportPDF = ({
             {/* Table Rows */}
             {sortedAttendance.map((record, index) => {
               const date = new Date(record.date);
-              const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+              const dayName = date.toLocaleDateString('en-US', {
+                timeZone: 'Asia/Dhaka',
+                weekday: 'short',
+              });
               const isEvenRow = index % 2 === 0;
               
               // Calculate Late/Early (শুধু Present স্ট্যাটাসের জন্য)
@@ -1015,7 +1116,10 @@ const AttendanceReportPDF = ({
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            A2IT HRM • Attendance Management System • Generated on {new Date().toLocaleDateString()}
+            A2IT HRM • Attendance Management System • Generated on{" "}
+            {new Date().toLocaleDateString("en-US", {
+              timeZone: "Asia/Dhaka",
+            })}
           </Text>
           {/* <Text style={styles.pageNumber}>
             Page 1
