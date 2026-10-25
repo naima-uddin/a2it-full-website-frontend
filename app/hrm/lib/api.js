@@ -545,6 +545,47 @@ export const adminResetPassword = async (data) => {
     throw error;
   }
 };
+
+// Shift management APIs
+const shiftRequest = async (request) => {
+  try {
+    const token = getToken();
+    if (!token) throw new Error("No authentication token found");
+    const response = await request();
+    return response.data;
+  } catch (error) {
+    console.error("Shift API error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message,
+    };
+  }
+};
+
+export const assignShiftToEmployee = (employeeId, shiftData) =>
+  shiftRequest(() => api.put(`/employee/${employeeId}/shift`, shiftData));
+
+export const resetEmployeeShift = (employeeId, reason = "") =>
+  shiftRequest(() =>
+    api.post(`/admin/reset-shift/${employeeId}`, { reason }),
+  );
+
+export const updateDefaultShift = (startTime, endTime) =>
+  shiftRequest(() =>
+    api.put("/admin/default-shift", { startTime, endTime }),
+  );
+
+export const getEmployeeShiftHistory = (employeeId) =>
+  shiftRequest(() => api.get(`/admin/shift-history/${employeeId}`));
+
+export const bulkAssignShifts = (employeeIds, shiftData) =>
+  shiftRequest(() =>
+    api.post("/admin/bulk-assign-shifts", { employeeIds, ...shiftData }),
+  );
+
+export const getShiftStatistics = () =>
+  shiftRequest(() => api.get("/admin/shift-statistics"));
+
 // File: app/lib/api.js
 
 // // ================= SHIFT MANAGEMENT APIs =================

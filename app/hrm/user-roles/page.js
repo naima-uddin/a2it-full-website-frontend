@@ -72,19 +72,13 @@ import {
   uploadProfilePicture,
   removeProfilePicture,
   sendWelcomeEmail,
+  assignShiftToEmployee,
+  resetEmployeeShift,
+  updateDefaultShift,
+  getEmployeeShiftHistory,
+  bulkAssignShifts,
+  getShiftStatistics,
 } from "@/app/hrm/lib/api";
-
-// Import shift APIs
-// import {
-//   getAllEmployeeShifts,
-//   assignShiftToEmployee,
-//   resetEmployeeShift,
-//   updateDefaultShift,
-//   getEmployeeShiftHistory,
-//   bulkAssignShifts,
-// getShiftStatistics,
-//   getMyShift
-// } from "@/app/hrm/lib/api";
 
 export default function page() {
   const [users, setUsers] = useState([]);
