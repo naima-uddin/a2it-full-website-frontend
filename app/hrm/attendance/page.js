@@ -497,8 +497,12 @@ function getEmployeeMonthSummary(records, weeklyOffDays, holidays, month, year) 
   let paidLeave = 0;
   for (let day = 1; day <= new Date(year, month, 0).getDate(); day++) {
     const date = new Date(year, month - 1, day);
-    if (offDayNums.has(date.getDay()) || holidayByDay[day]) continue;
     const record = byDay[day];
+    // An imported/admin-corrected attendance record makes this date a working
+    // day for the employee, even when the default schedule marks it off.
+    if (!record && (offDayNums.has(date.getDay()) || holidayByDay[day])) {
+      continue;
+    }
     if (!record) {
       if (date <= today) absent++;
       continue;
@@ -628,9 +632,11 @@ function EmployeeMonthView({
     halfDayCount = 0;
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(filterYear, filterMonth - 1, d);
-    if (offDayNums.has(dateObj.getDay())) continue; // recurring weekly off
-    if (holidayByDay[d]) continue; // govt/company holiday or override off-day
     const r = recsByDay[d];
+    // A real imported/corrected record takes precedence over the default
+    // weekly-off calendar. This is how a date-specific working-day override
+    // remains counted in the employee summary.
+    if (!r && (offDayNums.has(dateObj.getDay()) || holidayByDay[d])) continue;
     if (!r) {
       if (dateObj <= todayDate) officeMissCount++; // past working day, no record
       continue; // future day with no record → not counted yet
@@ -1251,11 +1257,12 @@ export default function AttendancePage() {
       const all = d.holidays || [];
       setMonthHolidays(
         all.filter((h) => {
-          if (!h.isActive) return false;
-          const hd = new Date(h.date);
-          return (
-            hd.getMonth() + 1 === Number(month) &&
-            hd.getFullYear() === Number(year)
+          if (h.isActive === false || !h.date) return false;
+          const dateKey = new Date(h.date).toLocaleDateString("en-CA", {
+            timeZone: "Asia/Dhaka",
+          });
+          return dateKey.startsWith(
+            `${year}-${String(month).padStart(2, "0")}-`,
           );
         }),
       );
@@ -2564,13 +2571,18 @@ export default function AttendancePage() {
                           >
                             <div className="w-12 text-center shrink-0">
                               <p className="text-sm font-bold text-gray-800">
-                                {new Date(rec.date)
-                                  .getDate()
+                                {Number(
+                                  new Date(rec.date).toLocaleDateString("en-BD", {
+                                    timeZone: "Asia/Dhaka",
+                                    day: "numeric",
+                                  }),
+                                )
                                   .toString()
                                   .padStart(2, "0")}
                               </p>
                               <p className="text-xs text-gray-400">
                                 {new Date(rec.date).toLocaleDateString("en", {
+                                  timeZone: "Asia/Dhaka",
                                   month: "short",
                                 })}
                               </p>
